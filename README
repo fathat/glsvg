@@ -1,0 +1,46 @@
+-----------------------------------------------
+glSVG
+-----------------------------------------------
+
+A python library for displaying SVG files
+using opengl.
+
+-----------------------------------------------
+Usage
+-----------------------------------------------
+
+    import glsvg
+
+    # initialize opengl context
+    # ...
+
+    # load svg file
+    svgObj = glsvg.SVG(filename)
+
+    # draw svg file
+    svgObj.draw(x,y)
+
+
+-----------------------------------------------
+TODO:
+-----------------------------------------------
+
+Add support for:
+
+- Variable stroke widths
+- Styles
+- PyGame
+
+Not supported:
+
+- Animation
+- Text (workaround: convert text-object-to-path in your editor)
+
+-----------------------------------------------
+Credits:
+-----------------------------------------------
+
+Based on the squirtle mini-library by Martin O'Leary:
+
+ http://www.pyweek.org/d/1783/
+
