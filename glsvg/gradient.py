@@ -79,15 +79,15 @@ class Gradient(object):
         delay_params = False
         if inherit:
             parent_id = inherit[1:]
-            parent = self.svg.gradients.get(parent_id, None)
+            parent = self.svg._gradients.get(parent_id, None)
             if parent == None:
-                self.svg.gradients.call_me_on_add(self.tardy_gradient_parsed, parent_id)
+                self.svg._gradients.call_me_on_add(self.tardy_gradient_parsed, parent_id)
                 delay_params = True
                 return
         if not delay_params:
             self.get_params(parent)
         
-    def interp(self, pt):
+    def sample(self, pt):
         if not self.stops: return [255, 0, 255, 255]
         t = self.grad_value(self.inv_transform(pt))
         if t < self.stops[0][0]:

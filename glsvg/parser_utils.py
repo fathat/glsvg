@@ -12,6 +12,11 @@ def parse_style(string):
             sdict[key.strip()] = value.strip()
     return sdict
 
+def parse_float(txt):
+    if txt.endswith('px'):
+        return float(txt[:-2])
+    else:
+        return float(txt)
 
 def parse_color(c, default=None):
     if not c:
