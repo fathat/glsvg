@@ -9,7 +9,7 @@ def parse_style(string):
     for item in string.split(';'):
         if ':' in item:
             key, value = item.split(':')
-            sdict[key] = value
+            sdict[key.strip()] = value.strip()
     return sdict
 
 

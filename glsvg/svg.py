@@ -23,6 +23,7 @@ import math
 import sys
 import string
 import shader
+import lines
 
 from matrix import *
 from parser_utils import *
@@ -53,19 +54,76 @@ def setup_gl():
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
+class Scope:
+    def __init__(self, e, parent):
+        self.parent = parent
+
+        if parent:
+            self.fill = parent.fill
+            self.stroke = parent.stroke
+        else:
+            self.fill = DEFAULT_FILL
+            self.stroke = DEFAULT_STROKE
+        self.stroke_width = None
+        self.transform = None
+        self.opacity = 1.0
+
+        self.fill = parse_color(e.get('fill'), self.fill)
+        self.stroke = parse_color(e.get('stroke'), self.stroke)
+
+        self.stroke_width = float(e.get('stroke-width', 1.0))
+
+        self.fill_rule = 'nonzero'
+        oldopacity = self.opacity
+        self.opacity *= float(e.get('opacity', 1))
+        fill_opacity = float(e.get('fill-opacity', 1))
+        stroke_opacity = float(e.get('stroke-opacity', 1))
+        self.path_id = e.get('id', '')
+        self.path_title = e.findtext('{%s}title' % (xmlns,))
+        self.path_description = e.findtext('{%s}desc' % (xmlns,))
+
+        style = e.get('style')
+        if style:
+            sdict = parse_style(style)
+            if 'fill' in sdict:
+                self.fill = parse_color(sdict['fill'])
+            if 'fill-opacity' in sdict:
+                fill_opacity *= float(sdict['fill-opacity'])
+            if 'stroke' in sdict:
+                self.stroke = parse_color(sdict['stroke'])
+            if 'stroke-opacity' in sdict:
+                stroke_opacity *= float(sdict['stroke-opacity'])
+            if 'stroke-width' in sdict:
+                sw = sdict['stroke-width']
+                if sw.endswith('px'):
+                    sw = sw[:-2]
+                self.stroke_width = float(sw)
+            if 'opacity' in sdict:
+                fill_opacity *= float(sdict['opacity'])
+                stroke_opacity *= float(sdict['opacity'])
+            if 'fill-rule' in sdict:
+                self.fill_rule = sdict['fill-rule']
+        if isinstance(self.stroke, list):
+            self.stroke[3] = int(self.opacity * stroke_opacity * self.stroke[3])
+        if isinstance(self.fill, list):
+            self.fill[3] = int(self.opacity * fill_opacity * self.fill[3])
+        #if isinstance(self.stroke, list) and self.stroke[3] == 0:
+        #    self.stroke = self.fill
+
 
 class SvgPath(object):
-    def __init__(self, path, stroke, polygon, fill, transform, path_id, title, desc):
-        
+    def __init__(self, scope, path, polygon, transform):
+        self.scope = scope
+        self.fill = scope.fill
+        self.stroke = scope.stroke
+        self.stroke_width = scope.stroke_width
         self.path = list(path) if path else []
-        self.stroke = stroke
         self.polygon = polygon
-        self.fill = fill
         self.transform = Matrix(transform.values)
-        self.id = path_id
-        self.title = title
-        self.description = desc
-        print "PATH", self.path
+        self.id = scope.path_id
+        self.title = scope.path_title
+        self.description = scope.path_description
+
         
         
     def __repr__(self):
@@ -117,6 +175,7 @@ class SVG(object):
         self.anchor_x = anchor_x
         self.anchor_y = anchor_y
 
+
     def _set_anchor_x(self, anchor_x):
         self._anchor_x = anchor_x
         if self._anchor_x == 'left':
@@ -162,7 +221,7 @@ class SVG(object):
             self.parse_doc()
             self.disp_list = glGenLists(1)
             glNewList(self.disp_list, GL_COMPILE)
-            self.render_slowly()
+            self.render()
             glEndList()
             self._disp_list_cache[self.filename, self.bezier_points] = (self.disp_list, self.width, self.height)
 
@@ -182,7 +241,7 @@ class SVG(object):
             `scale` : float
                 The amount by which the image should be scaled, either as a float, or a tuple 
                 of two floats (xscale, yscale).
-        
+
         """
         glPushMatrix()
         glTranslatef(x, y, z)
@@ -198,7 +257,7 @@ class SVG(object):
         glCallList(self.disp_list)
         glPopMatrix()
 
-    def render_slowly(self):
+    def render(self):
         self.n_tris = 0
         self.n_lines = 0
         for svgpath in self.paths:
@@ -206,6 +265,7 @@ class SVG(object):
             stroke = svgpath.stroke
             tris = svgpath.polygon
             fill = svgpath.fill
+            stroke_width = svgpath.stroke_width
             transform = svgpath.transform
             if tris:
                 self.n_tris += len(tris)/3
@@ -215,7 +275,7 @@ class SVG(object):
                     fills = [g.interp(x) for x in tris]
                 else:
                     fills = [fill for x in tris]
-                
+
                 glPushMatrix()
                 glMultMatrixf(transform.to_mat4())
                 if g: g.apply_shader(transform)
@@ -239,15 +299,14 @@ class SVG(object):
                         strokes = [g.interp(x) for x in loop_plus]
                     else:
                         strokes = [stroke for x in loop_plus]
+
+                    #don't draw if every stroke color is transparent
+                    #if all((s[3] == 0 for s in strokes)):
+                    #    continue
+
                     glPushMatrix()
                     glMultMatrixf(transform.to_mat4())
-                    glBegin(GL_LINES)
-                    for vtx, clr in zip(loop_plus, strokes):
-                        
-                        #vtx = transform(vtx)
-                        glColor4ub(*clr)
-                        glVertex3f(vtx[0], vtx[1], 0)
-                    glEnd()
+                    lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
                     glPopMatrix()
                                      
     def parse_float(self, txt):
@@ -297,47 +356,21 @@ class SVG(object):
             except Exception, ex:
                 print 'Exception while parsing element', e
                 raise
-            
-    def parse_element(self, e):
+
+    def _is_path_tag(self, e): return e.tag.endswith('path')
+    def _is_rect_tag(self, e): return e.tag.endswith('rect')
+
+    def parse_element(self, e, parent_scope=None):
         default = object()
-        self.fill = parse_color(e.get('fill'), DEFAULT_FILL)
-        self.stroke = parse_color(e.get('stroke'), DEFAULT_STROKE)
-        self.fill_rule = 'nonzero'
-        oldopacity = self.opacity
-        self.opacity *= float(e.get('opacity', 1))
-        fill_opacity = float(e.get('fill-opacity', 1))
-        stroke_opacity = float(e.get('stroke-opacity', 1))
-        self.path_id = e.get('id', '')
-        self.path_title = e.findtext('{%s}title' % (xmlns,))
-        self.path_description = e.findtext('{%s}desc' % (xmlns,))
+
+        scope = Scope(e, parent_scope)
+        self.scope = scope
 
         oldtransform = self.transform
         self.transform = self.transform * Matrix(e.get('transform'))
-        
-        style = e.get('style')
-        if style:
-            sdict = parse_style(style)
-            if 'fill' in sdict:
-                self.fill = parse_color(sdict['fill'])
-            if 'fill-opacity' in sdict:
-                fill_opacity *= float(sdict['fill-opacity'])
-            if 'stroke' in sdict:
-                self.stroke = parse_color(sdict['stroke'])
-            if 'stroke-opacity' in sdict:
-                stroke_opacity *= float(sdict['stroke-opacity'])
-            if 'opacity' in sdict:
-                fill_opacity *= float(sdict['opacity'])
-                stroke_opacity *= float(sdict['opacity'])
-            if 'fill-rule' in sdict:
-                self.fill_rule = sdict['fill-rule']
-        if isinstance(self.stroke, list):
-            self.stroke[3] = int(self.opacity * stroke_opacity * self.stroke[3])
-        if isinstance(self.fill, list):
-            self.fill[3] = int(self.opacity * fill_opacity * self.fill[3])                 
-        if isinstance(self.stroke, list) and self.stroke[3] == 0: self.stroke = self.fill #Stroked edges antialias better
-        
-        if e.tag.endswith('path'):
-            pathdata = e.get('d', '')               
+
+        if self._is_path_tag(e):
+            pathdata = e.get('d', '')
             pathdata = re.findall("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", pathdata)
             def pnext():
                 return (float(pathdata.pop(0)), float(pathdata.pop(0)))
@@ -436,7 +469,7 @@ class SVG(object):
                     self.warn("Unrecognised opcode: " + opcode)
                     raise Exception("Unrecognised opcode: " + opcode)
             self.end_path()
-        elif e.tag.endswith('rect'):
+        elif self._is_rect_tag(e):
             x = float(e.get('x', 0))
             y = float(e.get('y', 0))
             h = float(e.get('height'))
@@ -497,19 +530,21 @@ class SVG(object):
             self.gradients[e.get('id')] = RadialGradient(e, self)
         for c in e.getchildren():
             try:
-                self.parse_element(c)
+                self.parse_element(c, scope)
             except Exception, ex:
                 print 'Exception while parsing element', c
                 raise
         self.transform = oldtransform
-        self.opacity = oldopacity                        
+
+
 
     def new_path(self):
         self.x = 0
         self.y = 0
         self.close_index = 0
         self.path = []
-        self.loop = [] 
+        self.loop = []
+
         
     def close_path(self):
         self.loop.append(self.loop[0][:])
@@ -620,11 +655,12 @@ class SVG(object):
                     if (pt[0] - loop[-1][0])**2 + (pt[1] - loop[-1][1])**2 > TOLERANCE:
                         loop.append(pt)
                 path.append(loop)
-            path_object = SvgPath(path if self.stroke else None, self.stroke,
-                               self.triangulate(path) if self.fill else None, self.fill,
-                               self.transform, self.path_id, self.path_title, self.path_description)
+            path_object = SvgPath(self.scope,
+                               path if self.scope.stroke else None,
+                               self.triangulate(path) if self.scope.fill else None,
+                               self.transform)
             self.paths.append(path_object)
-            self.path_lookup[self.path_id] = path_object
+            self.path_lookup[self.scope.path_id] = path_object
         self.path = []
 
     def triangulate(self, looplist):
@@ -689,9 +725,9 @@ class SVG(object):
                 d_list.append(v_data)
             data_lists.append(d_list)
 
-        if self.fill_rule == 'nonzero':
+        if self.scope.fill_rule == 'nonzero':
             gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
-        elif self.fill_rule == 'evenodd':
+        elif self.scope.fill_rule == 'evenodd':
             gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD)
 
         gluTessBeginPolygon(tess, None)
