@@ -5,6 +5,7 @@ class Matrix(object):
     def __init__(self, string=None):
         self.values = [1, 0, 0, 1, 0, 0] #Identity matrix seems a sensible default
         if isinstance(string, str):
+            string = string.strip()
             if string.startswith('matrix('):
                 self.values = [float(x) for x in parse_list(string[7:-1])]
             elif string.startswith('translate('):

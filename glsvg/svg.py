@@ -48,12 +48,6 @@ DEFAULT_STROKE = [0, 0, 0, 0]
 #svg namespace
 XMLNS = 'http://www.w3.org/2000/svg'
 
-def setup_gl():
-    """Set various pieces of OpenGL state for better rendering of SVG."""
-    glEnable(GL_LINE_SMOOTH)
-    glEnable(GL_BLEND)
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
 class _AttributeScope:
     def __init__(self, element, parent):
         self.parent = parent
@@ -255,6 +249,8 @@ class SVG(object):
         glPopMatrix()
 
     def render(self):
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         self.n_tris = 0
         self.n_lines = 0
         for svgpath in self._paths:

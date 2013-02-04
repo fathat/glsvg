@@ -1,6 +1,5 @@
 #! usr/bin/env python 
 import os
-import sys
 import pyglet
 from pyglet.gl import *
 import glsvg
@@ -11,7 +10,7 @@ class SVGWindow(pyglet.window.Window):
     def __init__(self, *args, **kwargs):
         super(SVGWindow, self).__init__(*args, **kwargs)
         self.filename = None
-        self.svgObj = None
+        self.svg = None
 
         self.filelist = [f for f in os.listdir('svgs')
                     if f.endswith('svg') or f.endswith('svgz')]
@@ -19,12 +18,10 @@ class SVGWindow(pyglet.window.Window):
         glClearColor(1,1,1,1)
         glEnable(GL_LINE_SMOOTH)
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-        glLineWidth(2)
 
-        glsvg.setup_gl()
         self.keys = pyglet.window.key.KeyStateHandler()
         self.push_handlers(self.keys)
-        self.next_file()
+        self.switch_file(0)
         pyglet.clock.schedule_interval(self.tick, 1/60.0)
 
 
@@ -34,22 +31,24 @@ class SVGWindow(pyglet.window.Window):
         self.draw_x = 400
         self.draw_y = 300
 
-    def next_file(self):
+    def switch_file(self, dir=0):
         self.reset_camera()
         if not self.filename:
             next = 0
         else:
             prevFile = os.path.basename(self.filename)
-            next = self.filelist.index(prevFile)+1
+            next = self.filelist.index(prevFile)+dir
             next %= len(self.filelist)
         self.filename = os.path.join('svgs', self.filelist[next])
         print 'Parsing', self.filename
-        self.svgObj = glsvg.SVG(self.filename)
-        self.svgObj.anchor_x, self.svgObj.anchor_y = self.svgObj.width/2, self.svgObj.height/2
+        self.svg = glsvg.SVG(self.filename)
+        self.svg.anchor_x, self.svg.anchor_y = self.svg.width/2, self.svg.height/2
 
     def on_key_press(self, symbol, modifiers):
-        if symbol == pyglet.window.key.SPACE:
-            self.next_file()
+        if symbol == pyglet.window.key.RIGHT:
+            self.switch_file(1)
+        if symbol == pyglet.window.key.LEFT:
+            self.switch_file(-1)
 
     def tick(self, dt):
         if self.keys[pyglet.window.key.W]:
@@ -76,7 +75,7 @@ class SVGWindow(pyglet.window.Window):
         glLoadIdentity()
         gluOrtho2D(0.0, 800.0, 600, 0)
         glMatrixMode(GL_MODELVIEW)
-        self.svgObj.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
+        self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
 
 
 
