@@ -29,10 +29,10 @@ from matrix import *
 from parser_utils import *
 from gradient import *
 
-    
+
 BEZIER_POINTS = 40
 CIRCLE_POINTS = 24
-TOLERANCE = 0.001
+TOLERANCE = 0.1
 
 DEFAULT_FILL = [0, 0, 0, 255]
 DEFAULT_STROKE = [0, 0, 0, 0]
@@ -53,6 +53,8 @@ class _AttributeScope:
         self.stroke_width = None
         self.transform = None
         self.opacity = 1.0
+        self.n_tris = 0
+        self.n_lines = 0
 
         self.tag_type = element.tag
 
