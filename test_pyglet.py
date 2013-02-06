@@ -24,6 +24,20 @@ class SVGWindow(pyglet.window.Window):
         self.switch_file(0)
         pyglet.clock.schedule_interval(self.tick, 1/60.0)
 
+    def on_mouse_scroll(self, x, y, dx, dy):
+        self.zoom -= dy/100.0
+
+    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
+        self.draw_x += dx
+        self.draw_y -= dy
+
+    def on_resize(self, width, height):
+        # Override the default on_resize handler to create a 3D projection
+        glViewport(0, 0, width, height)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluOrtho2D(0.0, width, height, 0)
+        glMatrixMode(GL_MODELVIEW)
 
     def reset_camera(self):
         self.zoom = 1
@@ -68,19 +82,22 @@ class SVGWindow(pyglet.window.Window):
         if self.keys[pyglet.window.key.E]:
             self.angle += 120*dt
 
-
     def on_draw(self):
+        glClearColor(1, 1, 1, 1)
         self.clear()
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluOrtho2D(0.0, 800.0, 600, 0)
-        glMatrixMode(GL_MODELVIEW)
+        #glViewport(0, 0, 800, 600)
+        #glMatrixMode(GL_PROJECTION)
+        #glLoadIdentity()
+        #gluOrtho2D(0.0, 800.0, 600, 0)
+        #glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
         self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
+        glPopMatrix()
 
 
 
 def main():
-    config = pyglet.gl.Config(sample_buffers=1, samples=4)
+    config = pyglet.gl.Config(sample_buffers=1, samples=4, double_buffer=True)
     w = SVGWindow(config=config, resizable=True)
     pyglet.app.run()
 
