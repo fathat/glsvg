@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
-  <g style="fill:#aaaaaa; stroke:#aa0000; stroke-width:0.5">
-    <path d="M5 20 l215 0" />
-    <path stroke-width="4" d="M5 40 l215 0" />
-    <path stroke-width="6" d="M5 60 l215 0" />
-  </g>
-
-
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<pattern id="Pattern" x=".05" y=".05" width=".25" height=".25">
+<rect x="0" y="0" width="200" height="200"  fill="skyblue"/>
+<rect fill="green" x="0" width="25" height="25" y="0"/>
+<rect fill="red" x="15" width="40" height="40" y="15"/>
+<rect fill="yellow" x="45" width="25" height="25" y="45"/>
+</pattern>
+<rect fill="url(#Pattern)" stroke="black" x="0" y="0" width="200" height="200"/>
 </svg>

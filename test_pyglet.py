@@ -11,6 +11,9 @@ class SVGWindow(pyglet.window.Window):
         super(SVGWindow, self).__init__(*args, **kwargs)
         self.filename = None
         self.svg = None
+        self.fpslabel = pyglet.clock.ClockDisplay()
+        self.statslabel = pyglet.text.Label("tris: N/A, lines: N/A", color=(0,0,0,255))
+        self.statslabel.anchor_y = "top"
 
         self.filelist = [f for f in os.listdir('svgs')
                     if f.endswith('svg') or f.endswith('svgz')]
@@ -19,6 +22,7 @@ class SVGWindow(pyglet.window.Window):
         glEnable(GL_LINE_SMOOTH)
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
 
+        self.show_wireframe = False
         self.keys = pyglet.window.key.KeyStateHandler()
         self.push_handlers(self.keys)
         self.switch_file(0)
@@ -34,10 +38,7 @@ class SVGWindow(pyglet.window.Window):
     def on_resize(self, width, height):
         # Override the default on_resize handler to create a 3D projection
         glViewport(0, 0, width, height)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluOrtho2D(0.0, width, height, 0)
-        glMatrixMode(GL_MODELVIEW)
+
 
     def reset_camera(self):
         self.zoom = 1
@@ -57,12 +58,15 @@ class SVGWindow(pyglet.window.Window):
         print 'Parsing', self.filename
         self.svg = glsvg.SVG(self.filename)
         self.svg.anchor_x, self.svg.anchor_y = self.svg.width/2, self.svg.height/2
+        self.statslabel.text = "tris: " + str(self.svg.n_tris) + ", lines: " + str(self.svg.n_lines)
 
     def on_key_press(self, symbol, modifiers):
         if symbol == pyglet.window.key.RIGHT:
             self.switch_file(1)
         if symbol == pyglet.window.key.LEFT:
             self.switch_file(-1)
+        if symbol == pyglet.window.key.SPACE:
+            self.show_wireframe = not self.show_wireframe
 
     def tick(self, dt):
         if self.keys[pyglet.window.key.W]:
@@ -86,8 +90,33 @@ class SVGWindow(pyglet.window.Window):
         glClearColor(1, 1, 1, 1)
         self.clear()
         glPushMatrix()
+
+        if self.show_wireframe:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+
+        # set projection matrix to have top-left be (0,0), as
+        # SVGs are defined in that way
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluOrtho2D(0.0, self.width, self.height, 0)
+        glMatrixMode(GL_MODELVIEW)
+
         self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
         glPopMatrix()
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
+    # reverse y projection for pyglet stats drawing
+        # (because pyglet expects (0,0) to be bottom left
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluOrtho2D(0.0, self.width, 0, self.height)
+        glMatrixMode(GL_MODELVIEW)
+
+        self.statslabel.y = self.height
+        self.statslabel.draw()
+        self.fpslabel.draw()
+
 
 
 

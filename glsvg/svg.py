@@ -29,14 +29,6 @@ from matrix import *
 from parser_utils import *
 from gradient import *
 
-tess = gluNewTess()
-gluTessNormal(tess, 0, 0, 1)
-gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
-
-def set_tess_callback(which):
-    def set_call(func):
-        gluTessCallback(tess, which, func)
-    return set_call
     
 BEZIER_POINTS = 40
 CIRCLE_POINTS = 24
@@ -61,6 +53,8 @@ class _AttributeScope:
         self.stroke_width = None
         self.transform = None
         self.opacity = 1.0
+
+        self.tag_type = element.tag
 
         self.fill = parse_color(element.get('fill'), self.fill)
         self.stroke = parse_color(element.get('stroke'), self.stroke)
@@ -101,8 +95,13 @@ class _AttributeScope:
             self.fill[3] = int(self.opacity * fill_opacity * self.fill[3])
 
 
-class _SvgPath(object):
-    def __init__(self, scope, path, polygon, transform):
+class SvgPath(object):
+    """
+
+    """
+
+    def __init__(self, svg, scope, path, polygon, transform):
+        self.svg = svg
         self.scope = scope
         self.fill = scope.fill
         self.stroke = scope.stroke
@@ -113,8 +112,61 @@ class _SvgPath(object):
         self.id = scope.path_id
         self.title = scope.path_title
         self.description = scope.path_description
+        self.shape = None
 
-        
+
+    def render_stroke(self):
+        stroke = self.stroke
+        stroke_width = self.stroke_width
+        transform = self.transform
+        for loop in self.path:
+            self.svg.n_lines += len(loop) - 1
+            loop_plus = []
+            for i in xrange(len(loop) - 1):
+                loop_plus += [loop[i], loop[i+1]]
+            if isinstance(stroke, str):
+                g = self._gradients[stroke]
+                strokes = [g.sample(x) for x in loop_plus]
+            else:
+                strokes = [stroke for x in loop_plus]
+
+            glPushMatrix()
+            glMultMatrixf(transform.to_mat4())
+            lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
+            glPopMatrix()
+
+    def render_fill(self):
+        fill = self.fill
+        tris = self.polygon
+        transform = self.transform
+        self.svg.n_tris += len(tris)/3
+        g = None
+        if isinstance(fill, str):
+            g = self.svg._gradients[fill]
+            fills = [g.sample(x) for x in tris]
+        else:
+            fills = [fill for x in tris]
+
+        if g: g.apply_shader(transform)
+        with transform:
+            glBegin(GL_TRIANGLES)
+            for vtx, clr in zip(tris, fills):
+                if not g: glColor4ub(*clr)
+                else: glColor4f(1,1,1,1)
+                glVertex3f(vtx[0], vtx[1], 0)
+            glEnd()
+
+        if g: g.unapply_shader()
+
+    def render(self):
+        if self.polygon:
+            try:
+                self.render_fill()
+            except:
+                pass
+        if self.path:
+            self.render_stroke()
+
         
     def __repr__(self):
         return "<SvgPath id=%s title='%s' description='%s' transform=%s>" %(
@@ -234,19 +286,20 @@ class SVG(object):
                 of two floats (xscale, yscale).
 
         """
-        glPushMatrix()
-        glTranslatef(x, y, z)
-        if angle:
-            glRotatef(angle, 0, 0, 1)
-        if scale != 1:
-            try:
-                glScalef(scale[0], scale[1], 1)
-            except TypeError:
-                glScalef(scale, scale, 1)
-        if self._a_x or self._a_y:  
-            glTranslatef(-self._a_x, -self._a_y, 0)
-        glCallList(self.disp_list)
-        glPopMatrix()
+
+        with CurrentTransform():
+            glTranslatef(x, y, z)
+            if angle:
+                glRotatef(angle, 0, 0, 1)
+            if scale != 1:
+                try:
+                    glScalef(scale[0], scale[1], 1)
+                except TypeError:
+                    glScalef(scale, scale, 1)
+            if self._a_x or self._a_y:
+                glTranslatef(-self._a_x, -self._a_y, 0)
+            glCallList(self.disp_list)
+
 
     def render(self):
         glEnable(GL_BLEND)
@@ -254,50 +307,7 @@ class SVG(object):
         self.n_tris = 0
         self.n_lines = 0
         for svgpath in self._paths:
-            path = svgpath.path
-            stroke = svgpath.stroke
-            tris = svgpath.polygon
-            fill = svgpath.fill
-            stroke_width = svgpath.stroke_width
-            transform = svgpath.transform
-            if tris:
-                self.n_tris += len(tris)/3
-                g = None
-                if isinstance(fill, str):
-                    g = self._gradients[fill]
-                    fills = [g.sample(x) for x in tris]
-                else:
-                    fills = [fill for x in tris]
-
-                glPushMatrix()
-                glMultMatrixf(transform.to_mat4())
-                if g: g.apply_shader(transform)
-                glBegin(GL_TRIANGLES)
-                for vtx, clr in zip(tris, fills):
-                    #vtx = transform(vtx)
-                    if not g: glColor4ub(*clr)
-                    else: glColor4f(1,1,1,1)
-                    glVertex3f(vtx[0], vtx[1], 0)
-                glEnd()
-                glPopMatrix()
-                if g: g.unapply_shader()
-            if path:
-                for loop in path:
-                    self.n_lines += len(loop) - 1
-                    loop_plus = []
-                    for i in xrange(len(loop) - 1):
-                        loop_plus += [loop[i], loop[i+1]]
-                    if isinstance(stroke, str):
-                        g = self._gradients[stroke]
-                        strokes = [g.sample(x) for x in loop_plus]
-                    else:
-                        strokes = [stroke for x in loop_plus]
-
-                    glPushMatrix()
-                    glMultMatrixf(transform.to_mat4())
-                    lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
-                    glPopMatrix()
-                                     
+            svgpath.render()
 
 
     def _parse_doc(self):
@@ -633,7 +643,8 @@ class SVG(object):
                     if (pt[0] - loop[-1][0])**2 + (pt[1] - loop[-1][1])**2 > TOLERANCE:
                         loop.append(pt)
                 path.append(loop)
-            path_object = _SvgPath(self.scope,
+            path_object = SvgPath(self,
+                               self.scope,
                                path if self.scope.stroke else None,
                                self._triangulate(path) if self.scope.fill else None,
                                self.transform)
@@ -719,3 +730,14 @@ class SVG(object):
 
     def _warn(self, message):
         print "Warning: SVG Parser (%s) - %s" % (self.filename, message)
+
+
+
+tess = gluNewTess()
+gluTessNormal(tess, 0, 0, 1)
+gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
+
+def set_tess_callback(which):
+    def set_call(func):
+        gluTessCallback(tess, which, func)
+    return set_call

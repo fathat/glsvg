@@ -86,7 +86,8 @@ class Gradient(object):
                 return
         if not delay_params:
             self.get_params(parent)
-        
+
+
     def sample(self, pt):
         if not self.stops: return [255, 0, 255, 255]
         t = self.grad_value(self.inv_transform(pt))
