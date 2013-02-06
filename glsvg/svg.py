@@ -1,9 +1,9 @@
-"""Squirtle mini-library for SVG rendering in Pyglet.
+"""GLSVG library for SVG rendering in PyOpenGL.
 
 Example usage:
-    import squirtle
-    my_svg = squirtle.SVG('filename.svg')
-    my_svg.draw(100, 200, angle=15)
+    >>> import glsvg
+    >>> my_svg = glsvg.SVG('filename.svg')
+    >>> my_svg.draw(100, 200, angle=15)
     
 """
 

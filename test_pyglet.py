@@ -85,11 +85,6 @@ class SVGWindow(pyglet.window.Window):
     def on_draw(self):
         glClearColor(1, 1, 1, 1)
         self.clear()
-        #glViewport(0, 0, 800, 600)
-        #glMatrixMode(GL_PROJECTION)
-        #glLoadIdentity()
-        #gluOrtho2D(0.0, 800.0, 600, 0)
-        #glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
         glPopMatrix()
