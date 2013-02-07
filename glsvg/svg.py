@@ -120,7 +120,6 @@ class SvgPath(object):
     def render_stroke(self):
         stroke = self.stroke
         stroke_width = self.stroke_width
-        transform = self.transform
         for loop in self.path:
             self.svg.n_lines += len(loop) - 1
             loop_plus = []
@@ -131,16 +130,11 @@ class SvgPath(object):
                 strokes = [g.sample(x) for x in loop_plus]
             else:
                 strokes = [stroke for x in loop_plus]
-
-            glPushMatrix()
-            glMultMatrixf(transform.to_mat4())
             lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
-            glPopMatrix()
 
     def render_fill(self):
         fill = self.fill
         tris = self.polygon
-        transform = self.transform
         self.svg.n_tris += len(tris)/3
         g = None
         if isinstance(fill, str):
@@ -149,25 +143,26 @@ class SvgPath(object):
         else:
             fills = [fill for x in tris]
 
-        if g: g.apply_shader(transform)
-        with transform:
-            glBegin(GL_TRIANGLES)
-            for vtx, clr in zip(tris, fills):
-                if not g: glColor4ub(*clr)
-                else: glColor4f(1,1,1,1)
-                glVertex3f(vtx[0], vtx[1], 0)
-            glEnd()
+        if g: g.apply_shader(self.transform)
+
+        glBegin(GL_TRIANGLES)
+        for vtx, clr in zip(tris, fills):
+            if not g: glColor4ub(*clr)
+            else: glColor4f(1,1,1,1)
+            glVertex3f(vtx[0], vtx[1], 0)
+        glEnd()
 
         if g: g.unapply_shader()
 
     def render(self):
-        if self.polygon:
-            try:
-                self.render_fill()
-            except:
-                pass
-        if self.path:
-            self.render_stroke()
+        with self.transform:
+            if self.polygon:
+                try:
+                    self.render_fill()
+                except:
+                    pass
+            if self.path:
+                self.render_stroke()
 
         
     def __repr__(self):
