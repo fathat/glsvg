@@ -150,6 +150,6 @@ x = [line.strip().split() for line in color_list.splitlines()]
 
 named_colors = {}
 
-for name,value in x:
+for name, value in x:
     named_colors[name] = value
 

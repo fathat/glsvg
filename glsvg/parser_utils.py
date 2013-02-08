@@ -5,12 +5,12 @@ def parse_list(string):
     return re.findall("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", string)
 
 def parse_style(string):
-    sdict = {}
+    s_dict = {}
     for item in string.split(';'):
         if ':' in item:
             key, value = item.split(':')
-            sdict[key.strip()] = value.strip()
-    return sdict
+            s_dict[key.strip()] = value.strip()
+    return s_dict
 
 def parse_float(txt):
     if txt.endswith('px'):

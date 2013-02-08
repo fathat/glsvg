@@ -3,6 +3,7 @@ from matrix import *
 import shader
 import shaders
 
+
 class GradientShaders:
 
     def __init__(self):
@@ -27,13 +28,15 @@ class GradientShaders:
 
 gradient_shaders = GradientShaders()
 
+
 class GradientContainer(dict):
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self.callback_dict = {}
 
     def call_me_on_add(self, callback, grad_id):
-        '''The client wants to know when the gradient with id grad_id gets
+        '''
+        The client wants to know when the gradient with id grad_id gets
         added.  So store this callback for when that happens.
         When the desired gradient is added, the callback will be called
         with the gradient as the first and only argument.
@@ -87,7 +90,6 @@ class Gradient(object):
         if not delay_params:
             self.get_params(parent)
 
-
     def sample(self, pt):
         if not self.stops: return [255, 0, 255, 255]
         t = self.grad_value(self.inv_transform(pt))
@@ -116,14 +118,19 @@ class Gradient(object):
     def tardy_gradient_parsed(self, gradient):
         self.get_params(gradient)
         
-    def apply_shader(self, transform): pass
+    def apply_shader(self, transform):
+        pass
     
-    def unapply_shader(self, transform): pass
-        
+    def unapply_shader(self):
+        pass
+
+
 class LinearGradient(Gradient):
     params = ['x1', 'x2', 'y1', 'y2', 'stops']
+
     def grad_value(self, pt):
-        return ((pt[0] - self.x1)*(self.x2 - self.x1) + (pt[1] - self.y1)*(self.y2 - self.y1)) / ((self.x1 - self.x2)**2 + (self.y1 - self.y2)**2)
+        return ((pt[0] - self.x1) * (self.x2 - self.x1) + (pt[1] - self.y1) * (self.y2 - self.y1)) \
+            / ((self.x1 - self.x2) ** 2 + (self.y1 - self.y2) ** 2)
     
     def apply_shader(self, transform):
         if not self.stops: return
@@ -159,11 +166,11 @@ class LinearGradient(Gradient):
         if not self.stops: return
         gradient_shaders.linear_shader.stop()
 
+
 class RadialGradient(Gradient):
     params = ['cx', 'cy', 'r', 'stops']
 
     def grad_value(self, pt):
-
         return math.sqrt((pt[0] - self.cx) ** 2 + (pt[1] - self.cy) ** 2)/self.r
         
     def apply_shader(self, transform):
