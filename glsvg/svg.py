@@ -23,6 +23,7 @@ import math
 import string
 import lines
 
+from glutils import *
 from matrix import *
 from parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
@@ -50,7 +51,15 @@ class _AttributeScope:
             self.fill = DEFAULT_FILL
             self.stroke = DEFAULT_STROKE
         self.stroke_width = None
-        self.transform = None
+
+        if parent:
+            self.transform = parent.transform * Matrix(element.get('transform'))
+        else:
+            self.transform = Matrix(element.get('transform', None))
+
+            if not self.transform:
+                self.transform = Matrix([1, 0, 0, 1, 0, 0])
+
         self.opacity = 1.0
 
         self.tag_type = element.tag
@@ -98,15 +107,15 @@ class SvgPath(object):
 
     """
 
-    def __init__(self, svg, scope, path, polygon, transform):
+    def __init__(self, svg, scope, path, polygon):
         self.svg = svg
         self.scope = scope
+        self.transform = scope.transform
         self.fill = scope.fill
         self.stroke = scope.stroke
         self.stroke_width = scope.stroke_width
         self.path = list(path) if path else []
         self.polygon = polygon
-        self.transform = Matrix(transform.values)
         self.id = scope.path_id
         self.title = scope.path_title
         self.description = scope.path_description
@@ -169,12 +178,6 @@ class SvgPath(object):
         )
 
 
-class _PathContext(object):
-    def __init__(self):
-        self.x = 0
-        self.y = 0
-
-
 class SVG(object):
     """
     Opaque SVG image object.
@@ -183,8 +186,6 @@ class SVG(object):
     render.
     
     """
-    
-    _disp_list_cache = {}
 
     def __init__(self, filename, anchor_x=0, anchor_y=0, bezier_points=BEZIER_POINTS, circle_points=CIRCLE_POINTS, invert_y=False):
         """Creates an SVG object from a .svg or .svgz file.
@@ -251,21 +252,18 @@ class SVG(object):
     anchor_y = property(_get_anchor_y, _set_anchor_y)
     
     def _generate_disp_list(self):
-        if (self.filename, self._n_bezier_points) in self._disp_list_cache:
-            self.disp_list, self.width, self.height = self._disp_list_cache[self.filename, self._n_bezier_points]
+        if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08': #gzip magic numbers
+            import gzip
+            f = gzip.open(self.filename, 'rb')
         else:
-            if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08': #gzip magic numbers
-                import gzip
-                f = gzip.open(self.filename, 'rb')
-            else:
-                f = open(self.filename, 'rb')
-            self.tree = parse(f)
-            self._parse_doc()
-            self.disp_list = glGenLists(1)
-            glNewList(self.disp_list, GL_COMPILE)
+            f = open(self.filename, 'rb')
+        self.tree = parse(f)
+        self._parse_doc()
+
+        with DisplayListGenerator() as displaylist:
+            self.disp_list = displaylist
             self.render()
-            glEndList()
-            self._disp_list_cache[self.filename, self._n_bezier_points] = (self.disp_list, self.width, self.height)
+
 
     def draw(self, x, y, z=0, angle=0, scale=1):
         """Draws the SVG to screen.
@@ -297,7 +295,8 @@ class SVG(object):
                     glScalef(scale, scale, 1)
             if self._a_x or self._a_y:
                 glTranslatef(-self._a_x, -self._a_y, 0)
-            glCallList(self.disp_list)
+
+            self.disp_list()
 
     def render(self):
         glEnable(GL_BLEND)
@@ -320,25 +319,12 @@ class SVG(object):
 
         self.width = parse_float(wm)
         self.height = parse_float(hm)
+        #self.transform = Matrix([1, 0, 0, 1, 0, 0])
 
-        if self.height:
-            if self.invert_y:
-                self.transform = Matrix([1, 0, 0, -1, 0, self.height])
-            else:
-                self.transform = Matrix([1, 0, 0, 1, 0, 0])
-        elif self.tree._root.get("viewBox"):
+        if self.tree._root.get("viewBox"):
             x, y, w, h = (parse_float(x) for x in parse_list(self.tree._root.get("viewBox")))
-            if self.invert_y:
-                self.transform = Matrix([1, 0, 0, -1, 0, 0])
-            else:
-                self.transform = Matrix([1, 0, 0, 1, 0, 0])
             self.height = h
             self.width = w
-        else:
-            #no height or width defined.. make something up
-            self.height = 600
-            self.width = 800
-            self.transform = Matrix([1, 0, 0, 1, 0, 0])
 
         self.opacity = 1.0
         for e in self.tree._root.getchildren():
@@ -355,12 +341,10 @@ class SVG(object):
         return e.tag.endswith('rect')
 
     def _parse_element(self, e, parent_scope=None):
-        old_transform = self.transform
-
         scope = _AttributeScope(e, parent_scope)
 
-        self.scope = scope
-        self.transform = self.transform * Matrix(e.get('transform'))
+        #self.scope = scope
+        #self.transform = self.transform * Matrix(e.get('transform'))
 
         if self._is_path_tag(e):
             path_data = e.get('d', '')
@@ -382,50 +366,50 @@ class SVG(object):
                     self._set_cursor_position(*next_point())
                 elif opcode == 'm':
                     mx, my = next_point()
-                    self._set_cursor_position(self.cursor_x + mx, self.cursor_y + my)
+                    self._set_cursor_position(self.ctx_cursor_x + mx, self.ctx_cursor_y + my)
                 elif opcode == 'Q':  # absolute quadratic curve
                     self._quadratic_curve_to(*(next_point() + next_point()))
                 elif opcode == 'q':  # relative quadratic curve
                     ax, ay = next_point()
                     bx, by = next_point()
                     self._quadratic_curve_to(
-                        ax + self.cursor_x, ay + self.cursor_y,
-                        bx + self.cursor_x, by + self.cursor_y)
+                        ax + self.ctx_cursor_x, ay + self.ctx_cursor_y,
+                        bx + self.ctx_cursor_x, by + self.ctx_cursor_y)
 
                 elif opcode == 'T':
                     # quadratic curve with control point as reflection
-                    mx = 2 * self.cursor_x - self.last_cx
-                    my = 2 * self.cursor_y - self.last_cy
+                    mx = 2 * self.ctx_cursor_x - self.last_cx
+                    my = 2 * self.ctx_cursor_y - self.last_cy
                     x,y = next_point()
                     self._quadratic_curve_to(mx, my, x, y)
 
                 elif opcode == 't':
                     # relative quadratic curve with control point as reflection
-                    mx = 2 * self.cursor_x - self.last_cx
-                    my = 2 * self.cursor_y - self.last_cy
+                    mx = 2 * self.ctx_cursor_x - self.last_cx
+                    my = 2 * self.ctx_cursor_y - self.last_cy
                     x,y = next_point()
                     self._quadratic_curve_to(
-                        mx + self.cursor_x,
-                        my + self.cursor_y,
-                        x + self.cursor_x,
-                        y + self.cursor_y)
+                        mx + self.ctx_cursor_x,
+                        my + self.ctx_cursor_y,
+                        x + self.ctx_cursor_x,
+                        y + self.ctx_cursor_y)
 
                 elif opcode == 'C':
                     self._curve_to(*(next_point() + next_point() + next_point()))
                 elif opcode == 'c':
-                    mx, my = self.cursor_x, self.cursor_y
+                    mx, my = self.ctx_cursor_x, self.ctx_cursor_y
                     x1, y1 = next_point()
                     x2, y2 = next_point()
                     x, y = next_point()
                     
                     self._curve_to(mx + x1, my + y1, mx + x2, my + y2, mx + x, my + y)
                 elif opcode == 'S':
-                    self._curve_to(2 * self.cursor_x - self.last_cx, 2 * self.cursor_y - self.last_cy,
+                    self._curve_to(2 * self.ctx_cursor_x - self.last_cx, 2 * self.ctx_cursor_y - self.last_cy,
                                    *(next_point() + next_point()))
                 elif opcode == 's':
-                    mx = self.cursor_x
-                    my = self.cursor_y
-                    x1, y1 = 2 * self.cursor_x - self.last_cx, 2 * self.cursor_y - self.last_cy
+                    mx = self.ctx_cursor_x
+                    my = self.ctx_cursor_y
+                    x1, y1 = 2 * self.ctx_cursor_x - self.last_cx, 2 * self.ctx_cursor_y - self.last_cy
                     x2, y2 = next_point()
                     x, y = next_point()
                     
@@ -443,30 +427,30 @@ class SVG(object):
                     large_arc = int(path_data.pop(0))
                     sweep = int(path_data.pop(0))
                     x, y = next_point()
-                    self._arc_to(rx,  ry, phi, large_arc, sweep, self.cursor_x + x, self.cursor_y + y)
+                    self._arc_to(rx,  ry, phi, large_arc, sweep, self.ctx_cursor_x + x, self.ctx_cursor_y + y)
                 elif opcode in 'zZ':
                     self._close_path()
                 elif opcode == 'L':
                     self._line_to(*next_point())
                 elif opcode == 'l':
                     x, y = next_point()
-                    self._line_to(self.cursor_x + x, self.cursor_y + y)
+                    self._line_to(self.ctx_cursor_x + x, self.ctx_cursor_y + y)
                 elif opcode == 'H':
                     x = float(path_data.pop(0))
-                    self._line_to(x, self.cursor_y)
+                    self._line_to(x, self.ctx_cursor_y)
                 elif opcode == 'h':
                     x = float(path_data.pop(0))
-                    self._line_to(self.cursor_x + x, self.cursor_y)
+                    self._line_to(self.ctx_cursor_x + x, self.ctx_cursor_y)
                 elif opcode == 'V':
                     y = float(path_data.pop(0))
-                    self._line_to(self.cursor_x, y)
+                    self._line_to(self.ctx_cursor_x, y)
                 elif opcode == 'v':
                     y = float(path_data.pop(0))
-                    self._line_to(self.cursor_x, self.cursor_y + y)
+                    self._line_to(self.ctx_cursor_x, self.ctx_cursor_y + y)
                 else:
                     self._warn("Unrecognised opcode: " + opcode)
                     raise Exception("Unrecognised opcode: " + opcode)
-            self._end_path()
+            self._end_path(scope)
         elif self._is_rect_tag(e):
             x = float(e.get('x', 0))
             y = float(e.get('y', 0))
@@ -478,7 +462,7 @@ class SVG(object):
             self._line_to(x + w, y + h)
             self._line_to(x, y + h)
             self._line_to(x, y)
-            self._end_path()
+            self._end_path(scope)
         elif e.tag.endswith('polyline') or e.tag.endswith('polygon'):
             path_data = e.get('points')
             path_data = re.findall("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
@@ -491,7 +475,7 @@ class SVG(object):
                 self._line_to(*next_point())
             if e.tag.endswith('polygon'):
                 self._close_path()
-            self._end_path()
+            self._end_path(scope)
         elif e.tag.endswith('line'):
             x1 = float(e.get('x1'))
             y1 = float(e.get('y1'))
@@ -500,7 +484,7 @@ class SVG(object):
             self._new_path()
             self._set_cursor_position(x1, y1)
             self._line_to(x2, y2)
-            self._end_path()
+            self._end_path(scope)
         elif e.tag.endswith('circle'):
             cx = float(e.get('cx'))
             cy = float(e.get('cy'))
@@ -510,7 +494,7 @@ class SVG(object):
                 theta = 2 * i * math.pi / self._n_circle_points
                 self._line_to(cx + r * math.cos(theta), cy + r * math.sin(theta))
             self._close_path()
-            self._end_path()
+            self._end_path(scope)
         elif e.tag.endswith('ellipse'):
             cx = float(e.get('cx'))
             cy = float(e.get('cy'))
@@ -521,7 +505,7 @@ class SVG(object):
                 theta = 2 * i * math.pi / self._n_circle_points
                 self._line_to(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
             self._close_path()
-            self._end_path()
+            self._end_path(scope)
         elif e.tag.endswith("text"):
             self._warn("Text tag not supported")
         elif e.tag.endswith('linearGradient'):
@@ -534,30 +518,30 @@ class SVG(object):
             except Exception, ex:
                 print 'Exception while parsing element', c
                 raise
-        self.transform = old_transform
+        #self.transform = old_transform
 
     def _new_path(self):
-        self.cursor_x = 0
-        self.cursor_y = 0
+        self.ctx_cursor_x = 0
+        self.ctx_cursor_y = 0
         self.close_index = 0
-        self.path = []
-        self.loop = []
+        self.ctx_path = []
+        self.ctx_loop = []
 
     def _close_path(self):
-        self.loop.append(self.loop[0][:])
-        self.path.append(self.loop)
-        self.loop = []
+        self.ctx_loop.append(self.ctx_loop[0][:])
+        self.ctx_path.append(self.ctx_loop)
+        self.ctx_loop = []
         
     def _set_cursor_position(self, x, y):
-        self.cursor_x = x
-        self.cursor_y = y
-        self.loop.append([x,y])
+        self.ctx_cursor_x = x
+        self.ctx_cursor_y = y
+        self.ctx_loop.append([x,y])
     
     def _arc_to(self, rx, ry, phi, large_arc, sweep, x, y):
         # This function is made out of magical fairy dust
         # http://www.w3.org/TR/2003/REC-SVG11-20030114/implnote.html#ArcImplementationNotes
-        x1 = self.cursor_x
-        y1 = self.cursor_y
+        x1 = self.ctx_cursor_x
+        y1 = self.ctx_cursor_y
         x2 = x
         y2 = y
         cp = math.cos(phi)
@@ -599,8 +583,7 @@ class SVG(object):
                           sp * rx * ct + cp * ry * st + cy)
 
     def _quadratic_curve_to(self, x1, y1, x2, y2):
-        x0 = self.cursor_x
-        y0 = self.cursor_y
+        x0, y0 = self.ctx_cursor_x, self.ctx_cursor_y
 
         for i in xrange(self._n_bezier_points+1):
             t = float(i) / self._n_bezier_points
@@ -613,12 +596,10 @@ class SVG(object):
             bx = (q1x-q0x) * t + q0x
             by = (q1y-q0y) * t + q0y
 
-            self.loop.append([bx, by])
+            self.ctx_loop.append([bx, by])
 
-        self.last_cx = x1
-        self.last_cy = y1
-
-        self.cursor_x, self.cursor_y = x2, y2
+        self.last_cx, self.last_cy = x1, y1
+        self.ctx_cursor_x, self.ctx_cursor_y = x2, y2
 
     def _curve_to(self, x1, y1, x2, y2, x, y):
         if not self._bezier_coefficients:
@@ -632,20 +613,20 @@ class SVG(object):
         self.last_cx = x2
         self.last_cy = y2
         for i, t in enumerate(self._bezier_coefficients):
-            px = t[0] * self.cursor_x + t[1] * x1 + t[2] * x2 + t[3] * x
-            py = t[0] * self.cursor_y + t[1] * y1 + t[2] * y2 + t[3] * y
-            self.loop.append([px, py])
+            px = t[0] * self.ctx_cursor_x + t[1] * x1 + t[2] * x2 + t[3] * x
+            py = t[0] * self.ctx_cursor_y + t[1] * y1 + t[2] * y2 + t[3] * y
+            self.ctx_loop.append([px, py])
 
-        self.cursor_x, self.cursor_y = px, py
+        self.ctx_cursor_x, self.ctx_cursor_y = px, py
 
     def _line_to(self, x, y):
         self._set_cursor_position(x, y)
 
-    def _end_path(self):
-        self.path.append(self.loop)
-        if self.path:
+    def _end_path(self, scope):
+        self.ctx_path.append(self.ctx_loop)
+        if self.ctx_path:
             path = []
-            for orig_loop in self.path:
+            for orig_loop in self.ctx_path:
                 if not orig_loop:
                     continue
                 loop = [orig_loop[0]]
@@ -654,50 +635,49 @@ class SVG(object):
                         loop.append(pt)
                 path.append(loop)
             path_object = SvgPath(self,
-                                  self.scope,
-                                  path if self.scope.stroke else None,
-                                  self._triangulate(path) if self.scope.fill else None,
-                                  self.transform)
+                                  scope,
+                                  path if scope.stroke else None,
+                                  self._triangulate(path, scope) if scope.fill else None)
             self._paths.append(path_object)
-            self.path_lookup[self.scope.path_id] = path_object
-        self.path = []
+            self.path_lookup[scope.path_id] = path_object
+        self.ctx_path = []
 
-    def _triangulate(self, looplist):
+    def _triangulate(self, looplist, scope):
         t_list = []
-        self.curr_shape = []
+        self.ctx_curr_shape = []
         spare_verts = []
 
         @set_tess_callback(GLU_TESS_VERTEX)
         def vertex_callback(vertex):
-            self.curr_shape.append(list(vertex[0:2]))
+            self.ctx_curr_shape.append(list(vertex[0:2]))
 
         @set_tess_callback(GLU_TESS_BEGIN)
         def begin_callback(which):
-            self.tess_style = which
+            self.ctx_tess_style = which
 
         @set_tess_callback(GLU_TESS_END)
         def end_callback():
-            if self.tess_style == GL_TRIANGLE_FAN:
-                c = self.curr_shape.pop(0)
-                p1 = self.curr_shape.pop(0)
-                while self.curr_shape:
-                    p2 = self.curr_shape.pop(0)
+            if self.ctx_tess_style == GL_TRIANGLE_FAN:
+                c = self.ctx_curr_shape.pop(0)
+                p1 = self.ctx_curr_shape.pop(0)
+                while self.ctx_curr_shape:
+                    p2 = self.ctx_curr_shape.pop(0)
                     t_list.extend([c, p1, p2])
                     p1 = p2
-            elif self.tess_style == GL_TRIANGLE_STRIP:
-                p1 = self.curr_shape.pop(0)
-                p2 = self.curr_shape.pop(0)
-                while self.curr_shape:
-                    p3 = self.curr_shape.pop(0)
+            elif self.ctx_tess_style == GL_TRIANGLE_STRIP:
+                p1 = self.ctx_curr_shape.pop(0)
+                p2 = self.ctx_curr_shape.pop(0)
+                while self.ctx_curr_shape:
+                    p3 = self.ctx_curr_shape.pop(0)
                     t_list.extend([p1, p2, p3])
                     p1 = p2
                     p2 = p3
-            elif self.tess_style == GL_TRIANGLES:
-                t_list.extend(self.curr_shape)
+            elif self.ctx_tess_style == GL_TRIANGLES:
+                t_list.extend(self.ctx_curr_shape)
             else:
-                self._warn("Unrecognised tesselation style: %d" % (self.tess_style,))
-            self.tess_style = None
-            self.curr_shape = []
+                self._warn("Unrecognised tesselation style: %d" % (self.ctx_tess_style,))
+            self.ctx_tess_style = None
+            self.ctx_curr_shape = []
 
         @set_tess_callback(GLU_TESS_ERROR)
         def error_callback(code):
@@ -724,9 +704,9 @@ class SVG(object):
                 d_list.append(v_data)
             data_lists.append(d_list)
 
-        if self.scope.fill_rule == 'nonzero':
+        if scope.fill_rule == 'nonzero':
             gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
-        elif self.scope.fill_rule == 'evenodd':
+        elif scope.fill_rule == 'evenodd':
             gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD)
 
         gluTessBeginPolygon(tess, None)
