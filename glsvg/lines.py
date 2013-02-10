@@ -36,6 +36,7 @@ class vec2(object):
         return vec2(self.x / scale, self.y / scale)
 
     def __eq__(self, other):
+        if not other: return False
         return abs(self.x - other.x) < ep and abs(self.y - other.y) < ep
 
     def __ne__(self, other):
@@ -98,6 +99,12 @@ def _process_joint(ln, pln, miter_limit):
     up_intersection, ln.upper_join = ln_intersection(pln.upper_edge, ln.upper_edge)
     lo_intersection, ln.lower_join = ln_intersection(pln.lower_edge, ln.lower_edge)
 
+    if ln.upper_join == None:
+        ln.upper_join = ln.upper_edge.start
+
+    if ln.lower_join == None:
+        ln.lower_join = ln.lower_edge.start
+
     if line_length(ln.upper_edge.start, ln.upper_join) > miter_limit and not up_intersection:
         #bevel
         ln.upper_join = ln.upper_edge.start
@@ -144,6 +151,9 @@ def calc_polyline(points, w, miter_limit=4, closed=False):
         b_up_int, upper_join = ln_intersection(ll.upper_edge, lf.upper_edge)
         b_lo_int, lower_join = ln_intersection(ll.lower_edge, lf.lower_edge)
 
+        if upper_join == None: upper_join = ll.upper_edge.end
+        if lower_join == None: lower_join = ll.lower_edge.end
+
         if line_length(ll.upper_edge.end, upper_join) > miter_limit and b_up_int:
             ll.upper_v.append(ll.upper_join)
             ll.upper_v.append(ll.upper_edge.end)
@@ -184,6 +194,9 @@ def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=Fa
             unique_points.append(p)
         last_point = p
     points = unique_points
+
+    if len(points) == 1:
+        return
 
     if points[0] == points[-1]:
         closed = True
@@ -240,7 +253,7 @@ def intersection(p1, p2, p3, p4):
     det = A1 * B2 - A2 * B1
 
     if abs(det) < ep:  # Lines are parallel
-        return False, vec2(0, 0)
+        return False, None
     else:
         result = vec2(
             (B2 * C1 - B1 * C2) / det,
