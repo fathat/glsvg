@@ -188,10 +188,12 @@ class SvgPath(object):
 
                     #stencil fill
                     self.render_fill()
+
+                except Exception as exception:
+                    print exception
+                finally:
                     if self.svg.is_stencil_enabled():
                         glDisable(GL_STENCIL_TEST)
-                except:
-                    pass
             if self.path:
                 self.render_stroke()
         

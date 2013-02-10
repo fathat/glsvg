@@ -2,6 +2,7 @@ from parser_utils import *
 from matrix import *
 import shader
 import shaders
+import math
 
 
 class GradientShaders:
