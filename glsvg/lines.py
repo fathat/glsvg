@@ -120,7 +120,7 @@ def _process_joint(ln, pln, miter_limit):
 
 
 def calc_polyline(points, w, miter_limit=4, closed=False):
-    #if points[0] == points[-1]: closed = True
+
 
     points = [vec2(p) for p in points]
     if closed and points[0] != points[-1]:
@@ -171,19 +171,48 @@ def calc_polyline(points, w, miter_limit=4, closed=False):
     return lines
 
 
-def draw_polyline(points, w, colors=None, miter_limit=4, closed=False):
+def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=False):
     if len(points) == 0:
         return
+
+    #remove any duplicate points
+    unique_points = []
+    last_point = None
+    for p in points:
+        if p != last_point:
+            unique_points.append(p)
+        last_point = p
+    points = unique_points
+
+    if points[0] == points[-1]:
+        closed = True
+
     lines = calc_polyline(points, w, miter_limit, closed)
+
+    #draw points for start of line and end of line
+    if debug:
+        glPointSize(6)
+        glBegin(GL_POINTS)
+        if closed:
+            glColor4f(1, 0, 1, 1)
+        else:
+            glColor4f(1, 0, 0, 1)
+        glVertex2f(lines[0].upper_v[0].x, lines[0].upper_v[0].y)
+        glVertex2f(lines[0].lower_v[0].x, lines[0].lower_v[0].y)
+        glEnd()
+
+        glPointSize(6)
 
     if colors:
         for line in lines:
             glBegin(GL_TRIANGLE_FAN)
             for v, c in zip(line.upper_v, colors):
                 glColor4ub(*c)
+                if debug: glColor4f(1, 0, 0, 1)
                 glVertex2f(v.x, v.y)
             for v, c in reversed(zip(line.lower_v, colors)):
                 glColor4ub(*c)
+                if debug: glColor4f(0, 1, 0, 1)
                 glVertex2f(v.x, v.y)
             glEnd()
     else:

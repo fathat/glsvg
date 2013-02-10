@@ -15,6 +15,11 @@ class SVGWindow(pyglet.window.Window):
         self.statslabel = pyglet.text.Label("tris: N/A, lines: N/A", color=(0,0,0,255))
         self.statslabel.anchor_y = "top"
 
+        self.instruction_label = pyglet.text.Label(
+            "Scroll: WASD or Drag Mouse, Zoom: Mouse Wheel, Switch File: left/right arrow",
+            color=(0,0,0,255))
+        self.instruction_label.anchor_y = "top"
+
         self.filelist = [f for f in os.listdir('svgs')
                     if f.endswith('svg') or f.endswith('svgz')]
 
@@ -29,7 +34,7 @@ class SVGWindow(pyglet.window.Window):
         pyglet.clock.schedule_interval(self.tick, 1/60.0)
 
     def on_mouse_scroll(self, x, y, dx, dy):
-        self.zoom -= dy/100.0
+        self.zoom += dy/20.0
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
         self.draw_x += dx
@@ -113,7 +118,9 @@ class SVGWindow(pyglet.window.Window):
         gluOrtho2D(0.0, self.width, 0, self.height)
         glMatrixMode(GL_MODELVIEW)
 
-        self.statslabel.y = self.height
+        self.instruction_label.y = self.height
+        self.instruction_label.draw()
+        self.statslabel.y = self.height-20
         self.statslabel.draw()
         self.fpslabel.draw()
 
