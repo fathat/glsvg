@@ -136,6 +136,14 @@ class SvgPath(object):
                 strokes = [stroke for x in loop_plus]
             lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
 
+    def render_stroke_stencil(self):
+        stroke_width = self.stroke_width
+        for loop in self.path:
+            loop_plus = []
+            for i in xrange(len(loop) - 1):
+                loop_plus += [loop[i], loop[i+1]]
+            lines.draw_polyline(loop_plus, stroke_width)
+
     def render_fill(self):
         fill = self.fill
         tris = self.polygon
@@ -166,7 +174,22 @@ class SvgPath(object):
         with self.transform:
             if self.polygon:
                 try:
+                    #if stencil is on
+                    if self.svg.is_stencil_enabled():
+                        glEnable(GL_STENCIL_TEST)
+                        mask = self.svg.next_stencil_mask()
+                        glStencilFunc(GL_NEVER, mask, 0xFF);
+                        glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);  # draw mask id on test fail (always)
+                        glStencilMask(mask)
+                        self.render_stroke_stencil()
+
+                        #draw where stencil hasn't masked out
+                        glStencilFunc(GL_NOTEQUAL, mask, 0xFF)
+
+                    #stencil fill
                     self.render_fill()
+                    if self.svg.is_stencil_enabled():
+                        glDisable(GL_STENCIL_TEST)
                 except:
                     pass
             if self.path:
@@ -205,6 +228,8 @@ class SVG(object):
                 Defaults to 10.
                 
         """
+        self.stencil_bits = glGetInteger(GL_STENCIL_BITS)
+        self.stencil_mask = 0
         self.n_tris = 0
         self.n_lines = 0
         self.path_lookup = {}
@@ -218,6 +243,21 @@ class SVG(object):
         self._generate_disp_list()
         self._anchor_x = anchor_x
         self._anchor_y = anchor_y
+
+    def next_stencil_mask(self):
+        self.stencil_mask += 1
+
+        # if we run out of unique bits in stencil buffer,
+        # clear stencils and restart
+        if self.stencil_mask > (2**self.stencil_bits-1):
+            self.stencil_mask = 1
+            glStencilMask(0xFF)
+            glClear(GL_STENCIL_BUFFER_BIT)
+
+        return self.stencil_mask
+
+    def is_stencil_enabled(self):
+        return self.stencil_bits > 0
 
     def _set_anchor_x(self, anchor_x):
         self._anchor_x = anchor_x
@@ -301,6 +341,11 @@ class SVG(object):
     def render(self):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        #clear out stencils
+        if self.is_stencil_enabled():
+            glStencilMask(0xFF)
+            glClear(GL_STENCIL_BUFFER_BIT)
         for svg_path in self._paths:
             svg_path.render()
 

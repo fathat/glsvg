@@ -54,7 +54,7 @@ class App:
 
     def on_render(self):
         glClearColor(1, 1, 1, 1)
-
+        glStencilMask(0xFF)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
