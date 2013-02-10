@@ -177,6 +177,7 @@ def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=Fa
 
     #remove any duplicate points
     unique_points = []
+    unique_colors = []
     last_point = None
     for p in points:
         if p != last_point:
@@ -238,7 +239,7 @@ def intersection(p1, p2, p3, p4):
 
     det = A1 * B2 - A2 * B1
 
-    if det == 0:  # Lines are parallel
+    if abs(det) < ep:  # Lines are parallel
         return False, vec2(0, 0)
     else:
         result = vec2(
