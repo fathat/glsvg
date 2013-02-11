@@ -22,6 +22,9 @@ import re
 import math
 import string
 import lines
+import traceback
+
+import render_target
 
 from glutils import *
 from matrix import *
@@ -36,6 +39,8 @@ TOLERANCE = 0.1
 DEFAULT_FILL = [0, 0, 0, 255]
 DEFAULT_STROKE = [0, 0, 0, 0]
 
+PATTERN_TEX_SIZE = 1024
+
 #svg namespace
 XMLNS = 'http://www.w3.org/2000/svg'
 
@@ -43,10 +48,15 @@ XMLNS = 'http://www.w3.org/2000/svg'
 class _AttributeScope:
     def __init__(self, element, parent):
         self.parent = parent
+        self.is_pattern = element.tag.endswith("pattern")
+        self.is_pattern_part = False
 
         if parent:
             self.fill = parent.fill
             self.stroke = parent.stroke
+
+            if parent.is_pattern:
+                self.is_pattern_part = True
         else:
             self.fill = DEFAULT_FILL
             self.stroke = DEFAULT_STROKE
@@ -120,6 +130,11 @@ class SvgPath(object):
         self.title = scope.path_title
         self.description = scope.path_description
         self.shape = None
+        self.is_pattern = scope.is_pattern
+        self.is_pattern_part = scope.is_pattern_part
+
+        if self.is_pattern_part:
+            svg.register_pattern_part(scope.parent.path_id, self)
 
     def render_stroke(self):
         stroke = self.stroke
@@ -144,7 +159,7 @@ class SvgPath(object):
                 loop_plus += [loop[i], loop[i+1]]
             lines.draw_polyline(loop_plus, stroke_width)
 
-    def render_fill(self):
+    def render_gradient_fill(self):
         fill = self.fill
         tris = self.polygon
         self.svg.n_tris += len(tris)/3
@@ -170,6 +185,27 @@ class SvgPath(object):
         if g:
             g.unapply_shader()
 
+    def render_pattern_fill(self):
+        fill = self.fill
+        tris = self.polygon
+        pattern = None
+        if fill in self.svg.patterns:
+            pattern = self.svg.patterns[fill]
+            glEnable(GL_TEXTURE_2D)
+            pattern.bind_texture()
+
+        glBegin(GL_TRIANGLES)
+        for vtx in tris:
+            glColor4f(1, 1, 1, 1)
+            glTexCoord2f(vtx[0]/20.0, vtx[1]/20.0)
+            glVertex3f(vtx[0], vtx[1], 0)
+        glEnd()
+
+        if not pattern:
+            pattern.unbind_texture()
+
+        glDisable(GL_TEXTURE_2D)
+
     def render(self):
         with self.transform:
             if self.polygon:
@@ -187,10 +223,13 @@ class SvgPath(object):
                         glStencilFunc(GL_NOTEQUAL, mask, 0xFF)
 
                     #stencil fill
-                    self.render_fill()
+                    if isinstance(self.fill, str) and self.fill in self.svg.patterns:
+                        self.render_pattern_fill()
+                    else:
+                        self.render_gradient_fill()
 
                 except Exception as exception:
-                    print exception
+                    traceback.print_exc(exception)
                 finally:
                     if self.svg.is_stencil_enabled():
                         glDisable(GL_STENCIL_TEST)
@@ -203,6 +242,55 @@ class SvgPath(object):
         )
 
 
+class Pattern(object):
+
+    def __init__(self, element, svg):
+        self.svg = svg
+        self.id = element.get('id')
+        self.render_texture = None
+        self.paths = []
+
+    def bind_texture(self):
+        if not self.render_texture: return
+        self.render_texture.texture.bind()
+
+    def unbind_texture(self):
+        if not self.render_texture: return
+        self.render_texture.texture.unbind()
+
+    def render(self):
+        self.render_texture = render_target.RenderTarget(PATTERN_TEX_SIZE, PATTERN_TEX_SIZE)
+
+        self.render_texture.bind()
+
+        #setup projection matrix..
+
+        viewport = list(glGetFloatv(GL_VIEWPORT))
+
+        print "viewport", viewport
+        glViewport(0, 0, PATTERN_TEX_SIZE, PATTERN_TEX_SIZE)
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, 50, 0, 50, 0, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        glClearColor(0.0, 1.0, 0.0, 1.0)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        for path in self.paths:
+            print "path: ", str(path)
+            path.render()
+        glMatrixMode(GL_PROJECTION)
+
+        glPopMatrix()
+        glViewport(int(viewport[0]), int(viewport[1]), int(viewport[2]), int(viewport[3]))
+        glMatrixMode(GL_MODELVIEW)
+
+        self.render_texture.unbind()
+
+
+
 class SVG(object):
     """
     Opaque SVG image object.
@@ -212,7 +300,7 @@ class SVG(object):
     
     """
 
-    def __init__(self, filename, anchor_x=0, anchor_y=0, bezier_points=BEZIER_POINTS, circle_points=CIRCLE_POINTS, invert_y=False):
+    def __init__(self, filename, anchor_x=0, anchor_y=0, bezier_points=BEZIER_POINTS, circle_points=CIRCLE_POINTS, allow_stencil=True):
         """Creates an SVG object from a .svg or .svgz file.
         
             `filename`: str
@@ -236,7 +324,8 @@ class SVG(object):
         self.n_lines = 0
         self.path_lookup = {}
         self._paths = []
-        self.invert_y = invert_y
+        self.patterns = {}
+        self.allow_stencil = allow_stencil
         self.filename = filename
         self._n_bezier_points = bezier_points
         self._n_circle_points = circle_points
@@ -259,7 +348,11 @@ class SVG(object):
         return self.stencil_mask
 
     def is_stencil_enabled(self):
-        return self.stencil_bits > 0
+        return self.stencil_bits > 0 and self.allow_stencil
+
+    def register_pattern_part(self, pattern_id, pattern_svg_path):
+        print "registering pattern"
+        self.patterns[pattern_id].paths.append(pattern_svg_path)
 
     def _set_anchor_x(self, anchor_x):
         self._anchor_x = anchor_x
@@ -302,9 +395,13 @@ class SVG(object):
         self.tree = parse(f)
         self._parse_doc()
 
+        # prepare all the patterns
+        self.render_patterns()
+
         with DisplayListGenerator() as displaylist:
             self.disp_list = displaylist
             self.render()
+
 
 
     def draw(self, x, y, z=0, angle=0, scale=1):
@@ -340,6 +437,21 @@ class SVG(object):
 
             self.disp_list()
 
+    def render_patterns(self):
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        #clear out stencils
+        if self.is_stencil_enabled():
+            glStencilMask(0xFF)
+            glClear(GL_STENCIL_BUFFER_BIT)
+
+        print "preparing patterns"
+        print self.patterns
+        for pattern in self.patterns.values():
+            print "rendering", pattern
+            pattern.render()
+
     def render(self):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -349,7 +461,8 @@ class SVG(object):
             glStencilMask(0xFF)
             glClear(GL_STENCIL_BUFFER_BIT)
         for svg_path in self._paths:
-            svg_path.render()
+            if not svg_path.is_pattern and not svg_path.is_pattern_part:
+                svg_path.render()
 
     def _parse_doc(self):
         self._paths = []
@@ -559,6 +672,8 @@ class SVG(object):
             self._gradients[e.get('id')] = LinearGradient(e, self)
         elif e.tag.endswith('radialGradient'):
             self._gradients[e.get('id')] = RadialGradient(e, self)
+        elif e.tag.endswith('pattern'):
+            self.patterns[e.get('id')] = Pattern(e, self)
         for c in e.getchildren():
             try:
                 self._parse_element(c, scope)

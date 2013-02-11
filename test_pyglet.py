@@ -105,13 +105,32 @@ class SVGWindow(pyglet.window.Window):
         glLoadIdentity()
         gluOrtho2D(0.0, self.width, self.height, 0)
         glMatrixMode(GL_MODELVIEW)
-
+        glDisable(GL_TEXTURE_2D)
         self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
+
+        #draw patterns
+        i = 0
+        for pattern in self.svg.patterns.values():
+            glEnable(GL_TEXTURE_2D)
+            pattern.bind_texture()
+            glColor4f(1,1,1,1)
+            glBegin(GL_QUADS)
+            glTexCoord2f(0, 0)
+            glVertex2f(0, 0)
+            glTexCoord2f(1, 0)
+            glVertex2f(128, 0)
+            glTexCoord2f(1, 1)
+            glVertex2f(128, 128)
+            glTexCoord2f(0, 1)
+            glVertex2f(0, 128)
+            glEnd()
+            pattern.unbind_texture()
+            glTranslatef(128, 0, 0)
         glPopMatrix()
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-    # reverse y projection for pyglet stats drawing
+        # reverse y projection for pyglet stats drawing
         # (because pyglet expects (0,0) to be bottom left
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()

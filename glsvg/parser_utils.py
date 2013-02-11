@@ -13,7 +13,10 @@ def parse_style(string):
     return s_dict
 
 def parse_float(txt):
-    if txt.endswith('px'):
+    if txt.endswith('%'):
+        pct = float(txt[:-1])/100.0
+        return pct
+    elif txt.endswith('px'):
         return float(txt[:-2])
     else:
         return float(txt)

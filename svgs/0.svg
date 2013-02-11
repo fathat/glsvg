@@ -1,97 +1,22 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="744.09448819"
-   height="1052.3622047"
-   id="svg2"
-   version="1.1"
-   inkscape:version="0.47 r22583"
-   sodipodi:docname="radial_gradient.svg">
-  <defs
-     id="defs4">
-    <linearGradient
-       id="linearGradient3590">
-      <stop
-         style="stop-color:#4156ff;stop-opacity:1;"
-         offset="0"
-         id="stop3592" />
-      <stop
-         id="stop3598"
-         offset="0.71670556"
-         style="stop-color:#00ff01;stop-opacity:1;" />
-      <stop
-         style="stop-color:#00ffe8;stop-opacity:0;"
-         offset="1"
-         id="stop3594" />
+<?xml version="1.0" standalone="no"?>
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <defs>
+    <linearGradient id="Gradient1">
+      <stop offset="5%" stop-color="white"/>
+      <stop offset="95%" stop-color="blue"/>
     </linearGradient>
-    <inkscape:perspective
-       sodipodi:type="inkscape:persp3d"
-       inkscape:vp_x="0 : 526.18109 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_z="744.09448 : 526.18109 : 1"
-       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
-       id="perspective10" />
-    <radialGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3590"
-       id="radialGradient3596"
-       cx="334.28571"
-       cy="313.79077"
-       fx="334.28571"
-       fy="313.79077"
-       r="325.35715"
-       gradientTransform="matrix(0.45855511,-0.38420334,0.20776367,0.2063708,161.51726,593.18149)"
-       gradientUnits="userSpaceOnUse" />
+    <linearGradient id="Gradient2" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="5%" stop-color="red"/>
+      <stop offset="95%" stop-color="orange"/>
+    </linearGradient>
+
+    <pattern id="Pattern" x=".05" y=".05" width=".25" height=".25">
+      <rect x="0" y="0" width="50" height="50" fill="skyblue"/>
+      <rect x="0" y="0" width="25" height="25" fill="#FF0000"/>
+      <circle cx="25" cy="25" r="20" fill="#00FF00" fill-opacity="0.5"/>
+    </pattern> 
+
   </defs>
-  <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="0.35"
-     inkscape:cx="302.0467"
-     inkscape:cy="520"
-     inkscape:document-units="px"
-     inkscape:current-layer="layer1"
-     showgrid="false"
-     inkscape:window-width="982"
-     inkscape:window-height="779"
-     inkscape:window-x="4"
-     inkscape:window-y="0"
-     inkscape:window-maximized="0" />
-  <metadata
-     id="metadata7">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
-     id="layer1">
-    <rect
-       style="fill:url(#radialGradient3596);fill-opacity:1;stroke:#000000;stroke-width:2.97335339;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       id="rect2816"
-       width="402.02664"
-       height="339.16953"
-       x="178.98668"
-       y="359.92032" />
-  </g>
+  
+  <rect fill="url(#Pattern)" stroke="black" x="0" y="0" width="200" height="200"/>
 </svg>

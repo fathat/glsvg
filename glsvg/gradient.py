@@ -72,7 +72,8 @@ class Gradient(object):
                 color[3] = int(float(e.get('stop-opacity', '1')) * 255)
                 if 'stop-opacity' in style:
                     color[3] = int(float(style['stop-opacity']) * 255)
-                self.stops[float(e.get('offset'))] = color
+                offset = parse_float(e.get('offset'))
+                self.stops[offset] = color
         self.stops = sorted(self.stops.items())
         self.svg = svg
         self.grad_transform = Matrix(element.get('gradientTransform'))
@@ -128,6 +129,14 @@ class Gradient(object):
 
 class LinearGradient(Gradient):
     params = ['x1', 'x2', 'y1', 'y2', 'stops']
+
+    def __init__(self, *args):
+        self.x1 = 0
+        self.x2 = 0
+        self.y1 = 0
+        self.y2 = 1
+        Gradient.__init__(self, *args)
+
 
     def grad_value(self, pt):
         return ((pt[0] - self.x1) * (self.x2 - self.x1) + (pt[1] - self.y1) * (self.y2 - self.y1)) \
