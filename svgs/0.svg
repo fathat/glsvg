@@ -10,13 +10,13 @@
       <stop offset="95%" stop-color="orange"/>
     </linearGradient>
 
-    <pattern id="Pattern" x=".05" y=".05" width=".25" height=".25">
-      <rect x="0" y="0" width="50" height="50" fill="skyblue"/>
-      <rect x="0" y="0" width="25" height="25" fill="#FF0000"/>
-      <circle cx="25" cy="25" r="20" fill="#00FF00" fill-opacity="0.5"/>
-    </pattern> 
+     <pattern id="Pattern" width=".25" height=".25" patternContentUnits="objectBoundingBox">
+       <rect x="0" y="0" width=".25" height=".25" fill="skyblue"/>
+       <rect x="0" y="0" width=".125" height=".125" fill="#ff0000"/>
+       <circle cx=".125" cy=".125" r=".1" fill="#0000ff" fill-opacity="0.5"/>
+     </pattern>
 
   </defs>
-  
+
   <rect fill="url(#Pattern)" stroke="black" x="0" y="0" width="200" height="200"/>
 </svg>

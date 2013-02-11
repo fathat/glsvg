@@ -34,7 +34,7 @@ from gradient import *
 
 BEZIER_POINTS = 40
 CIRCLE_POINTS = 24
-TOLERANCE = 0.1
+TOLERANCE = 0.001
 
 DEFAULT_FILL = [0, 0, 0, 255]
 DEFAULT_STROKE = [0, 0, 0, 0]
@@ -247,6 +247,9 @@ class Pattern(object):
     def __init__(self, element, svg):
         self.svg = svg
         self.id = element.get('id')
+        self.units = element.get('patternContentUnits', 'objectBoundingBox')
+        self.width = parse_float(element.get('width', '1.0'))
+        self.height = parse_float(element.get('height', '1.0'))
         self.render_texture = None
         self.paths = []
 
@@ -272,11 +275,11 @@ class Pattern(object):
         glMatrixMode(GL_PROJECTION)
         glPushMatrix();
         glLoadIdentity();
-        glOrtho(0, 50, 0, 50, 0, 1)
+        glOrtho(0, self.width, 0, self.height, 0, 1)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 
-        glClearColor(0.0, 1.0, 0.0, 1.0)
+        glClearColor(0.0, 0.5, 1.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         for path in self.paths:
             print "path: ", str(path)
@@ -387,7 +390,7 @@ class SVG(object):
     anchor_y = property(_get_anchor_y, _set_anchor_y)
     
     def _generate_disp_list(self):
-        if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08': #gzip magic numbers
+        if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08':  # gzip magic numbers
             import gzip
             f = gzip.open(self.filename, 'rb')
         else:
@@ -398,8 +401,8 @@ class SVG(object):
         # prepare all the patterns
         self.render_patterns()
 
-        with DisplayListGenerator() as displaylist:
-            self.disp_list = displaylist
+        with DisplayListGenerator() as display_list:
+            self.disp_list = display_list
             self.render()
 
 
