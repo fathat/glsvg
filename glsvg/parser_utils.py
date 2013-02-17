@@ -1,5 +1,5 @@
 import re
-from named_colors import named_colors
+import svg_constants
 
 def parse_list(string):
     return re.findall("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", string)
@@ -29,8 +29,8 @@ def parse_color(c, default=None):
 
     c = c.strip()
 
-    if c in named_colors:
-        c = named_colors[c]
+    if c in svg_constants.named_colors:
+        c = svg_constants.named_colors[c]
 
     if c.startswith('rgb'):
         start = c.index('(')
