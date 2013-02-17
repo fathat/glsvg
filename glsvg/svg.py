@@ -27,6 +27,8 @@ from glutils import *
 from vector_math import *
 from parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
+
+from svg_path_builder import SvgElementScope
 from svg_path import SvgPath
 from svg_pattern import *
 
@@ -262,7 +264,7 @@ class SVG(object):
         return e.tag.endswith('rect')
 
     def _parse_element(self, e, parent_scope=None):
-        scope = _AttributeScope(e, parent_scope)
+        scope = SvgElementScope(e, parent_scope)
 
         if self._is_path_tag(e):
             path = SvgPath(self, scope, e)
@@ -286,70 +288,3 @@ class SVG(object):
     def _warn(self, message):
         print "Warning: SVG Parser (%s) - %s" % (self.filename, message)
 
-
-
-class _AttributeScope:
-    def __init__(self, element, parent):
-        self.parent = parent
-        self.is_pattern = element.tag.endswith("pattern")
-        self.is_pattern_part = False
-
-        if parent:
-            self.fill = parent.fill
-            self.stroke = parent.stroke
-
-            if parent.is_pattern:
-                self.is_pattern_part = True
-        else:
-            self.fill = DEFAULT_FILL
-            self.stroke = DEFAULT_STROKE
-        self.stroke_width = None
-
-        if parent:
-            self.transform = parent.transform * Matrix(element.get('transform'))
-        else:
-            self.transform = Matrix(element.get('transform', None))
-
-            if not self.transform:
-                self.transform = Matrix([1, 0, 0, 1, 0, 0])
-
-        self.opacity = 1.0
-
-        self.tag_type = element.tag
-
-        self.fill = parse_color(element.get('fill'), self.fill)
-        self.fill_rule = 'nonzero'
-
-        self.stroke = parse_color(element.get('stroke'), self.stroke)
-        self.stroke_width = float(element.get('stroke-width', 1.0))
-
-        self.opacity *= float(element.get('opacity', 1))
-        fill_opacity = float(element.get('fill-opacity', 1))
-        stroke_opacity = float(element.get('stroke-opacity', 1))
-        self.path_id = element.get('id', '')
-        self.path_title = element.findtext('{%s}title' % (XMLNS,))
-        self.path_description = element.findtext('{%s}desc' % (XMLNS,))
-
-        style = element.get('style')
-        if style:
-            style_dict = parse_style(style)
-            if 'fill' in style_dict:
-                self.fill = parse_color(style_dict['fill'])
-            if 'fill-opacity' in style_dict:
-                fill_opacity *= float(style_dict['fill-opacity'])
-            if 'stroke' in style_dict:
-                self.stroke = parse_color(style_dict['stroke'])
-            if 'stroke-opacity' in style_dict:
-                stroke_opacity *= float(style_dict['stroke-opacity'])
-            if 'stroke-width' in style_dict:
-                sw = style_dict['stroke-width']
-                self.stroke_width = parse_float(sw)
-            if 'opacity' in style_dict:
-                fill_opacity *= float(style_dict['opacity'])
-                stroke_opacity *= float(style_dict['opacity'])
-            if 'fill-rule' in style_dict:
-                self.fill_rule = style_dict['fill-rule']
-        if isinstance(self.stroke, list):
-            self.stroke[3] = int(self.opacity * stroke_opacity * self.stroke[3])
-        if isinstance(self.fill, list):
-            self.fill[3] = int(self.opacity * fill_opacity * self.fill[3])

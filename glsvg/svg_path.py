@@ -27,7 +27,6 @@ class SvgPath(object):
         self.title = scope.path_title
         self.description = scope.path_description
         self.shape = None
-        self._gradients = None
         self.is_pattern = scope.is_pattern
         self.is_pattern_part = scope.is_pattern_part
 
@@ -48,7 +47,7 @@ class SvgPath(object):
             for i in xrange(len(loop) - 1):
                 loop_plus += [loop[i], loop[i+1]]
             if isinstance(stroke, str):
-                g = self._gradients[stroke]
+                g = self.svg._gradients[stroke]
                 strokes = [g.sample(x) for x in loop_plus]
             else:
                 strokes = [stroke for x in loop_plus]

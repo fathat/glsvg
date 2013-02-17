@@ -5,9 +5,79 @@ import string
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from svg_constants import *
+from parser_utils import *
+from vector_math import Matrix
 
 POINT_RE = re.compile("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
+
+
+class SvgElementScope:
+    def __init__(self, element, parent):
+        self.parent = parent
+        self.is_pattern = element.tag.endswith("pattern")
+        self.is_pattern_part = False
+
+        if parent:
+            self.fill = parent.fill
+            self.stroke = parent.stroke
+
+            if parent.is_pattern:
+                self.is_pattern_part = True
+        else:
+            self.fill = DEFAULT_FILL
+            self.stroke = DEFAULT_STROKE
+        self.stroke_width = None
+
+        if parent:
+            self.transform = parent.transform * Matrix(element.get('transform'))
+        else:
+            self.transform = Matrix(element.get('transform', None))
+
+            if not self.transform:
+                self.transform = Matrix([1, 0, 0, 1, 0, 0])
+
+        self.opacity = 1.0
+
+        self.tag_type = element.tag
+
+        self.fill = parse_color(element.get('fill'), self.fill)
+        self.fill_rule = 'nonzero'
+
+        self.stroke = parse_color(element.get('stroke'), self.stroke)
+        self.stroke_width = float(element.get('stroke-width', 1.0))
+
+        self.opacity *= float(element.get('opacity', 1))
+        fill_opacity = float(element.get('fill-opacity', 1))
+        stroke_opacity = float(element.get('stroke-opacity', 1))
+        self.path_id = element.get('id', '')
+        self.path_title = element.findtext('{%s}title' % (XMLNS,))
+        self.path_description = element.findtext('{%s}desc' % (XMLNS,))
+
+        style = element.get('style')
+        if style:
+            style_dict = parse_style(style)
+            if 'fill' in style_dict:
+                self.fill = parse_color(style_dict['fill'])
+            if 'fill-opacity' in style_dict:
+                fill_opacity *= float(style_dict['fill-opacity'])
+            if 'stroke' in style_dict:
+                self.stroke = parse_color(style_dict['stroke'])
+            if 'stroke-opacity' in style_dict:
+                stroke_opacity *= float(style_dict['stroke-opacity'])
+            if 'stroke-width' in style_dict:
+                sw = style_dict['stroke-width']
+                self.stroke_width = parse_float(sw)
+            if 'opacity' in style_dict:
+                fill_opacity *= float(style_dict['opacity'])
+                stroke_opacity *= float(style_dict['opacity'])
+            if 'fill-rule' in style_dict:
+                self.fill_rule = style_dict['fill-rule']
+        if isinstance(self.stroke, list):
+            self.stroke[3] = int(self.opacity * stroke_opacity * self.stroke[3])
+        if isinstance(self.fill, list):
+            self.fill[3] = int(self.opacity * fill_opacity * self.fill[3])
+
 
 class SvgPathBuilder(object):
     def __init__(self, path, scope, element, config):
@@ -306,6 +376,14 @@ class SvgPathBuilder(object):
         t_list = []
         self.ctx_curr_shape = []
         spare_verts = []
+        tess = gluNewTess()
+        gluTessNormal(tess, 0, 0, 1)
+        gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
+
+        def set_tess_callback(which):
+            def set_call(func):
+                gluTessCallback(tess, which, func)
+            return set_call
 
         @set_tess_callback(GLU_TESS_VERTEX)
         def vertex_callback(vertex):
@@ -383,11 +461,3 @@ class SvgPathBuilder(object):
 
 
 
-tess = gluNewTess()
-gluTessNormal(tess, 0, 0, 1)
-gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
-
-def set_tess_callback(which):
-    def set_call(func):
-        gluTessCallback(tess, which, func)
-    return set_call
