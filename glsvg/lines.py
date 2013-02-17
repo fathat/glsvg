@@ -38,10 +38,10 @@ def _process_joint(ln, pln, miter_limit):
     up_intersection, ln.upper_join = ln_intersection(pln.upper_edge, ln.upper_edge)
     lo_intersection, ln.lower_join = ln_intersection(pln.lower_edge, ln.lower_edge)
 
-    if not ln.upper_join:
+    if ln.upper_join == None:
         ln.upper_join = ln.upper_edge.start
 
-    if not ln.lower_join:
+    if ln.lower_join == None:
         ln.lower_join = ln.lower_edge.start
 
     if line_length(ln.upper_edge.start, ln.upper_join) > miter_limit and not up_intersection:
@@ -170,7 +170,7 @@ def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=Fa
             glEnd()
     else:
         for line in lines:
-            glBegin(GL_TRIANGLE_FAN)
+            glBegin(GL_LINE_STRIP)
             for v in line.upper_v: glVertex2f(v.x, v.y)
             for v in reversed(line.lower_v): glVertex2f(v.x, v.y)
             glEnd()

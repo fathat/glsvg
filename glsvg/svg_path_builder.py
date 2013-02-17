@@ -89,13 +89,14 @@ class SvgPathBuilder(object):
         self.ctx_loop = []
         self.scope = scope
         self.config = config
+        self.shape = None
 
         e = element
         if e.tag.endswith('path'):
-            path.shape = 'path'
+            self.shape = path.shape = 'path'
             self._read_path_commands(e, scope)
         elif e.tag.endswith('rect'):
-            path.shape = 'rect'
+            self.shape = path.shape = 'rect'
             x = float(e.get('x', 0))
             y = float(e.get('y', 0))
             h = float(e.get('height'))
@@ -108,7 +109,10 @@ class SvgPathBuilder(object):
             self._line_to(x, y)
             self._end_path()
         elif e.tag.endswith('polyline') or e.tag.endswith('polygon'):
-            path.shape = 'polygon'
+            if e.tag.endswith('polyline'):
+                self.shape = path.shape = 'polyline'
+            else:
+                self.shape = path.shape = 'polygon'
             path_data = e.get('points')
             path_data = POINT_RE.findall(path_data)
 
@@ -120,7 +124,7 @@ class SvgPathBuilder(object):
                 self._close_path()
             self._end_path()
         elif e.tag.endswith('line'):
-            path.shape = 'line'
+            self.shape = path.shape = 'line'
             x1 = float(e.get('x1'))
             y1 = float(e.get('y1'))
             x2 = float(e.get('x2'))
@@ -130,7 +134,7 @@ class SvgPathBuilder(object):
             self._line_to(x2, y2)
             self._end_path()
         elif e.tag.endswith('circle'):
-            path.shape = 'circle'
+            self.shape = path.shape = 'circle'
             cx = float(e.get('cx'))
             cy = float(e.get('cy'))
             r = float(e.get('r'))
@@ -141,7 +145,7 @@ class SvgPathBuilder(object):
             self._close_path()
             self._end_path()
         elif e.tag.endswith('ellipse'):
-            path.shape = 'ellipse'
+            self.shape = path.shape = 'ellipse'
             cx = float(e.get('cx'))
             cy = float(e.get('cy'))
             rx = float(e.get('rx'))
@@ -373,6 +377,8 @@ class SvgPathBuilder(object):
         self.ctx_path = []
 
     def _triangulate(self, looplist, scope):
+        if self.shape in ['line', 'polyline']:
+            return None
         t_list = []
         self.ctx_curr_shape = []
         spare_verts = []
