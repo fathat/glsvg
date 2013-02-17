@@ -30,7 +30,6 @@ class SvgPath(object):
         self.is_pattern = scope.is_pattern
         self.is_pattern_part = scope.is_pattern_part
 
-
         if self.is_pattern_part:
             svg.register_pattern_part(scope.parent.path_id, self)
 

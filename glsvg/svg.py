@@ -157,7 +157,7 @@ class SVG(object):
         self._parse_doc()
 
         # prepare all the patterns
-        self.render_patterns()
+        self.prerender_patterns()
 
         with DisplayListGenerator() as display_list:
             self.disp_list = display_list
@@ -196,7 +196,7 @@ class SVG(object):
 
             self.disp_list()
 
-    def render_patterns(self):
+    def prerender_patterns(self):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
@@ -259,9 +259,6 @@ class SVG(object):
                 or e.tag.endswith('polyline') or e.tag.endswith('polygon')
                 or e.tag.endswith('line')
                 or e.tag.endswith('circle') or e.tag.endswith('ellipse'))
-
-    def _is_rect_tag(self, e):
-        return e.tag.endswith('rect')
 
     def _parse_element(self, e, parent_scope=None):
         scope = SvgElementScope(e, parent_scope)

@@ -32,6 +32,14 @@ class Texture2D:
     def unbind(self):
         glBindTexture(GL_TEXTURE_2D, 0)
 
+    def __enter__(self):
+        self.bind()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.unbind()
+        pass
+
 
 class RenderBufferObject:
     def __init__(self, w, h):
@@ -58,13 +66,12 @@ class RenderTarget:
         if depth_and_stencil:
             self.depth_stencil = RenderBufferObject(w, h)
 
-
         glFramebufferTexture2D(
-                GL_FRAMEBUFFER,
-                GL_COLOR_ATTACHMENT0,
-                GL_TEXTURE_2D,
-                self.texture.id,
-                0);
+            GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D,
+            self.texture.id,
+            0)
 
         self.ok = self.check_status()
 
@@ -80,7 +87,15 @@ class RenderTarget:
             return False
 
     def bind(self):
-        glBindFramebuffer(GL_FRAMEBUFFER, self.id);
+        glBindFramebuffer(GL_FRAMEBUFFER, self.id)
 
     def unbind(self):
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    def __enter__(self):
+        self.bind()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.unbind()
+        pass
