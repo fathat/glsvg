@@ -41,12 +41,15 @@ class SvgPath(object):
         path = self
         scope = self.scope
         if e.tag.endswith('path'):
+            self.shape = 'path'
             path._read_path(e, scope)
         elif e.tag.endswith('rect'):
+            self.shape = 'rect'
             x = float(e.get('x', 0))
             y = float(e.get('y', 0))
             h = float(e.get('height'))
             w = float(e.get('width'))
+            self.x, self.y, self.w, self.h = x, y, w, h
             path._start_path()
             path._set_cursor_position(x, y)
             path._line_to(x + w, y)
@@ -55,6 +58,7 @@ class SvgPath(object):
             path._line_to(x, y)
             path._end_path(scope)
         elif e.tag.endswith('polyline') or e.tag.endswith('polygon'):
+            self.shape = 'polygon'
             path_data = e.get('points')
             path_data = re.findall("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
 
@@ -67,18 +71,22 @@ class SvgPath(object):
                 path._close_path()
             path._end_path(scope)
         elif e.tag.endswith('line'):
+            self.shape = 'line'
             x1 = float(e.get('x1'))
             y1 = float(e.get('y1'))
             x2 = float(e.get('x2'))
             y2 = float(e.get('y2'))
+            self.x1, self.x1, self.x2, self.y2 = x1, y1, x2, y2
             path._start_path()
             path._set_cursor_position(x1, y1)
             path._line_to(x2, y2)
             path._end_path(scope)
         elif e.tag.endswith('circle'):
+            self.shape = 'circle'
             cx = float(e.get('cx'))
             cy = float(e.get('cy'))
             r = float(e.get('r'))
+            self.cx, self.cy, self.r = cx, cy, r
             path._start_path()
             for i in xrange(self.config.circle_points):
                 theta = 2 * i * math.pi / self.config.circle_points
@@ -86,10 +94,12 @@ class SvgPath(object):
             path._close_path()
             path._end_path(scope)
         elif e.tag.endswith('ellipse'):
+            self.shape = 'ellipse'
             cx = float(e.get('cx'))
             cy = float(e.get('cy'))
             rx = float(e.get('rx'))
             ry = float(e.get('ry'))
+            self.cx, self.cy, self.rx, self.ry = cx, cy, rx, ry
             path._start_path()
             for i in xrange(self.config.circle_points):
                 theta = 2 * i * math.pi / self.config.circle_points
