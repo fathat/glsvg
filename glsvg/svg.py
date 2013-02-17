@@ -215,7 +215,7 @@ class SVG(object):
     def render(self):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
+        #glEnable(GL_DEPTH_TEST)
         #clear out stencils
         if self.is_stencil_enabled():
             self._clear_stencils()

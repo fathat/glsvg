@@ -7,6 +7,7 @@ import lines
 import traceback
 
 from svg_path_builder import SvgPathBuilder
+from glutils import DisplayListGenerator
 
 class SvgPath(object):
     """
@@ -16,7 +17,6 @@ class SvgPath(object):
     def __init__(self, svg, scope, element):
         self.svg = svg
         self.config = svg.config
-        self.scope = scope
         self.transform = scope.transform
         self.fill = scope.fill
         self.stroke = scope.stroke
@@ -36,6 +36,12 @@ class SvgPath(object):
         path_builder = SvgPathBuilder(self, scope, element, svg.config)
         self.path = path_builder.path
         self.polygon = path_builder.polygon
+        self.display_list = None
+
+    def _generate_display_list(self):
+        with DisplayListGenerator() as dl:
+            self.render()
+            self.display_list = dl
 
     def render_stroke(self):
         stroke = self.stroke
@@ -53,7 +59,8 @@ class SvgPath(object):
             lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
 
     def render_stroke_stencil(self):
-        if not self.path: return
+        if not self.path:
+            return
         stroke_width = self.stroke_width
         for loop in self.path:
             loop_plus = []
@@ -108,7 +115,7 @@ class SvgPath(object):
 
         glDisable(GL_TEXTURE_2D)
 
-    def render(self):
+    def render_stenciled(self):
         with self.transform:
             if self.polygon:
                 try:
@@ -137,6 +144,23 @@ class SvgPath(object):
                         glDisable(GL_STENCIL_TEST)
             if self.path:
                 self.render_stroke()
+
+    def render(self):
+        with self.transform:
+            if self.path:
+                self.render_stroke()
+            if self.polygon:
+                glPolygonOffset(1, -0.1)
+                try:
+                    if isinstance(self.fill, str) and self.fill in self.svg.patterns:
+                        self.render_pattern_fill()
+                    else:
+                        self.render_gradient_fill()
+                except Exception as exception:
+                    traceback.print_exc(exception)
+                glPolygonOffset(1, 0)
+
+
 
     def __repr__(self):
         return "<SvgPath id=%s title='%s' description='%s' transform=%s>" % (
