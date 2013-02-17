@@ -7,6 +7,7 @@ from OpenGL.GLU import *
 from svg_constants import *
 
 import lines
+import traceback
 
 class SvgPath(object):
     """
@@ -417,6 +418,7 @@ class SvgPath(object):
             lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
 
     def render_stroke_stencil(self):
+        if not self.path: return
         stroke_width = self.stroke_width
         for loop in self.path:
             loop_plus = []

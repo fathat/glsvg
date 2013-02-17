@@ -147,7 +147,7 @@ class SVGWindow(pyglet.window.Window):
 
 
 def main():
-    config = pyglet.gl.Config(sample_buffers=1, samples=4, double_buffer=True)
+    config = pyglet.gl.Config(sample_buffers=1, samples=4, stencil_size=8, double_buffer=True)
     w = SVGWindow(config=config, resizable=True)
     pyglet.app.run()
 

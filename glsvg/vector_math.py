@@ -55,6 +55,10 @@ class vec2(object):
 
 
 def intersection(p1, p2, p3, p4):
+    """
+    Returns whether two lines intersected, and the point at which
+    they intersected (or, "None" if the lines are parallel)
+    """
     A1 = p2.y - p1.y
     B1 = p1.x - p2.x
     C1 = A1 * p1.x + B1 * p1.y
@@ -84,13 +88,14 @@ def intersection(p1, p2, p3, p4):
 
 
 def line_length(a, b):
-    return math.sqrt((b.x-a.x)**2 + (b.y-a.y)**2)
+    return math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
 
 
 def radian(deg):
-    return deg * (math.pi/180.0)
+    return deg * (math.pi / 180.0)
 
 ninety_degrees = radian(90)
+
 
 class Matrix(object):
     def __init__(self, string=None):

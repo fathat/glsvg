@@ -1,8 +1,10 @@
 import re
 import svg_constants
 
+re_list_parser = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
+
 def parse_list(string):
-    return re.findall("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", string)
+    return re_list_parser.findall(string)
 
 def parse_style(string):
     s_dict = {}
