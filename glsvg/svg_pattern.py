@@ -45,10 +45,13 @@ class Pattern(object):
 
     def render(self):
         #setup projection matrix..
-        #min_x, min_y, max_x, max_y = self.extents()
+        min_x, min_y, max_x, max_y = self.extents()
+
+        print "extents"
+        print self.extents()
 
         with self.render_texture:
-            with ViewportAs(self.x, self.y, self.width, self.height, PATTERN_TEX_SIZE, PATTERN_TEX_SIZE):
+            with ViewportAs(min_x*self.x, min_y*self.y, max_x*self.width, max_y*self.height, PATTERN_TEX_SIZE, PATTERN_TEX_SIZE):
                 glClearColor(0.0, 0.5, 1.0, 1.0)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                 for path in self.paths:
