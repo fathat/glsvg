@@ -293,6 +293,22 @@ class Pattern(object):
         self.render_texture.unbind()
 
 
+class SVGConfig:
+    def __init__(self):
+        self.stencil_bits = glGetInteger(GL_STENCIL_BITS)
+        self.has_framebuffer_objects = True
+        self.allow_stencil = self.stencil_bits > 0
+        self.bezier_points = BEZIER_POINTS
+        self.circle_points = CIRCLE_POINTS
+
+    def __repr__(self):
+        return "<SVGConfig stencil_bits={0} fbo={1} circle_points={2} bezier_points={3}>".format(
+            self.stencil_bits,
+            self.has_framebuffer_objects,
+            self.circle_points,
+            self.bezier_points
+        )
+
 
 class SVG(object):
     """
@@ -303,7 +319,7 @@ class SVG(object):
     
     """
 
-    def __init__(self, filename, anchor_x=0, anchor_y=0, bezier_points=BEZIER_POINTS, circle_points=CIRCLE_POINTS, allow_stencil=True):
+    def __init__(self, filename, anchor_x=0, anchor_y=0, config=None):
         """Creates an SVG object from a .svg or .svgz file.
         
             `filename`: str
@@ -321,29 +337,32 @@ class SVG(object):
                 Defaults to 10.
                 
         """
-        self.stencil_bits = glGetInteger(GL_STENCIL_BITS)
+        if not config:
+            self.config = SVGConfig()
+        else:
+            self.config = config
         self.stencil_mask = 0
         self.n_tris = 0
         self.n_lines = 0
         self.path_lookup = {}
         self._paths = []
         self.patterns = {}
-        self.allow_stencil = allow_stencil
         self.filename = filename
-        self._n_bezier_points = bezier_points
-        self._n_circle_points = circle_points
         self._bezier_coefficients = []
         self._gradients = GradientContainer()
         self._generate_disp_list()
         self._anchor_x = anchor_x
         self._anchor_y = anchor_y
 
+    def test_capabilities(self):
+        return None
+
     def next_stencil_mask(self):
         self.stencil_mask += 1
 
         # if we run out of unique bits in stencil buffer,
         # clear stencils and restart
-        if self.stencil_mask > (2**self.stencil_bits-1):
+        if self.stencil_mask > (2**self.config.stencil_bits-1):
             self.stencil_mask = 1
             glStencilMask(0xFF)
             glClear(GL_STENCIL_BUFFER_BIT)
@@ -351,7 +370,7 @@ class SVG(object):
         return self.stencil_mask
 
     def is_stencil_enabled(self):
-        return self.stencil_bits > 0 and self.allow_stencil
+        return self.config.allow_stencil
 
     def register_pattern_part(self, pattern_id, pattern_svg_path):
         print "registering pattern"
@@ -405,8 +424,6 @@ class SVG(object):
             self.disp_list = display_list
             self.render()
 
-
-
     def draw(self, x, y, z=0, angle=0, scale=1):
         """Draws the SVG to screen.
         
@@ -449,10 +466,7 @@ class SVG(object):
             glStencilMask(0xFF)
             glClear(GL_STENCIL_BUFFER_BIT)
 
-        print "preparing patterns"
-        print self.patterns
         for pattern in self.patterns.values():
-            print "rendering", pattern
             pattern.render()
 
     def render(self):
@@ -503,123 +517,123 @@ class SVG(object):
     def _is_rect_tag(self, e):
         return e.tag.endswith('rect')
 
+    def _read_path(self, e, scope):
+        path_data = e.get('d', '')
+        path_data = re.findall("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
+
+        def next_point():
+            return float(path_data.pop(0)), float(path_data.pop(0))
+
+        self._start_path()
+        opcode = ''
+        while path_data:
+            prev_opcode = opcode
+            if path_data[0] in string.letters:
+                opcode = path_data.pop(0)
+            else:
+                opcode = prev_opcode
+
+            if opcode == 'M':
+                self._set_cursor_position(*next_point())
+            elif opcode == 'm':
+                mx, my = next_point()
+                self._set_cursor_position(self.ctx_cursor_x + mx, self.ctx_cursor_y + my)
+            elif opcode == 'Q':  # absolute quadratic curve
+                self._quadratic_curve_to(*(next_point() + next_point()))
+            elif opcode == 'q':  # relative quadratic curve
+                ax, ay = next_point()
+                bx, by = next_point()
+                self._quadratic_curve_to(
+                    ax + self.ctx_cursor_x, ay + self.ctx_cursor_y,
+                    bx + self.ctx_cursor_x, by + self.ctx_cursor_y)
+
+            elif opcode == 'T':
+                # quadratic curve with control point as reflection
+                mx = 2 * self.ctx_cursor_x - self.last_cx
+                my = 2 * self.ctx_cursor_y - self.last_cy
+                x, y = next_point()
+                self._quadratic_curve_to(mx, my, x, y)
+
+            elif opcode == 't':
+                # relative quadratic curve with control point as reflection
+                mx = 2 * self.ctx_cursor_x - self.last_cx
+                my = 2 * self.ctx_cursor_y - self.last_cy
+                x, y = next_point()
+                self._quadratic_curve_to(
+                    mx + self.ctx_cursor_x,
+                    my + self.ctx_cursor_y,
+                    x + self.ctx_cursor_x,
+                    y + self.ctx_cursor_y)
+
+            elif opcode == 'C':
+                self._curve_to(*(next_point() + next_point() + next_point()))
+            elif opcode == 'c':
+                mx, my = self.ctx_cursor_x, self.ctx_cursor_y
+                x1, y1 = next_point()
+                x2, y2 = next_point()
+                x, y = next_point()
+
+                self._curve_to(mx + x1, my + y1, mx + x2, my + y2, mx + x, my + y)
+            elif opcode == 'S':
+                self._curve_to(2 * self.ctx_cursor_x - self.last_cx, 2 * self.ctx_cursor_y - self.last_cy,
+                               *(next_point() + next_point()))
+            elif opcode == 's':
+                mx = self.ctx_cursor_x
+                my = self.ctx_cursor_y
+                x1, y1 = 2 * self.ctx_cursor_x - self.last_cx, 2 * self.ctx_cursor_y - self.last_cy
+                x2, y2 = next_point()
+                x, y = next_point()
+
+                self._curve_to(x1, y1, mx + x2, my + y2, mx + x, my + y)
+            elif opcode == 'A':
+                rx, ry = next_point()
+                phi = float(path_data.pop(0))
+                large_arc = int(path_data.pop(0))
+                sweep = int(path_data.pop(0))
+                x, y = next_point()
+                self._arc_to(rx, ry, phi, large_arc, sweep, x, y)
+            elif opcode == 'a':  # relative arc
+                rx, ry = next_point()
+                phi = float(path_data.pop(0))
+                large_arc = int(path_data.pop(0))
+                sweep = int(path_data.pop(0))
+                x, y = next_point()
+                self._arc_to(rx, ry, phi, large_arc, sweep, self.ctx_cursor_x + x, self.ctx_cursor_y + y)
+            elif opcode in 'zZ':
+                self._close_path()
+            elif opcode == 'L':
+                self._line_to(*next_point())
+            elif opcode == 'l':
+                x, y = next_point()
+                self._line_to(self.ctx_cursor_x + x, self.ctx_cursor_y + y)
+            elif opcode == 'H':
+                x = float(path_data.pop(0))
+                self._line_to(x, self.ctx_cursor_y)
+            elif opcode == 'h':
+                x = float(path_data.pop(0))
+                self._line_to(self.ctx_cursor_x + x, self.ctx_cursor_y)
+            elif opcode == 'V':
+                y = float(path_data.pop(0))
+                self._line_to(self.ctx_cursor_x, y)
+            elif opcode == 'v':
+                y = float(path_data.pop(0))
+                self._line_to(self.ctx_cursor_x, self.ctx_cursor_y + y)
+            else:
+                self._warn("Unrecognised opcode: " + opcode)
+                raise Exception("Unrecognised opcode: " + opcode)
+        self._end_path(scope)
+
     def _parse_element(self, e, parent_scope=None):
         scope = _AttributeScope(e, parent_scope)
 
-        #self.scope = scope
-        #self.transform = self.transform * Matrix(e.get('transform'))
-
         if self._is_path_tag(e):
-            path_data = e.get('d', '')
-            path_data = re.findall("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
-
-            def next_point():
-                return float(path_data.pop(0)), float(path_data.pop(0))
-
-            self._new_path()
-            opcode = ''
-            while path_data:
-                prev_opcode = opcode
-                if path_data[0] in string.letters:
-                    opcode = path_data.pop(0)
-                else:
-                    opcode = prev_opcode
-                
-                if opcode == 'M':
-                    self._set_cursor_position(*next_point())
-                elif opcode == 'm':
-                    mx, my = next_point()
-                    self._set_cursor_position(self.ctx_cursor_x + mx, self.ctx_cursor_y + my)
-                elif opcode == 'Q':  # absolute quadratic curve
-                    self._quadratic_curve_to(*(next_point() + next_point()))
-                elif opcode == 'q':  # relative quadratic curve
-                    ax, ay = next_point()
-                    bx, by = next_point()
-                    self._quadratic_curve_to(
-                        ax + self.ctx_cursor_x, ay + self.ctx_cursor_y,
-                        bx + self.ctx_cursor_x, by + self.ctx_cursor_y)
-
-                elif opcode == 'T':
-                    # quadratic curve with control point as reflection
-                    mx = 2 * self.ctx_cursor_x - self.last_cx
-                    my = 2 * self.ctx_cursor_y - self.last_cy
-                    x,y = next_point()
-                    self._quadratic_curve_to(mx, my, x, y)
-
-                elif opcode == 't':
-                    # relative quadratic curve with control point as reflection
-                    mx = 2 * self.ctx_cursor_x - self.last_cx
-                    my = 2 * self.ctx_cursor_y - self.last_cy
-                    x,y = next_point()
-                    self._quadratic_curve_to(
-                        mx + self.ctx_cursor_x,
-                        my + self.ctx_cursor_y,
-                        x + self.ctx_cursor_x,
-                        y + self.ctx_cursor_y)
-
-                elif opcode == 'C':
-                    self._curve_to(*(next_point() + next_point() + next_point()))
-                elif opcode == 'c':
-                    mx, my = self.ctx_cursor_x, self.ctx_cursor_y
-                    x1, y1 = next_point()
-                    x2, y2 = next_point()
-                    x, y = next_point()
-                    
-                    self._curve_to(mx + x1, my + y1, mx + x2, my + y2, mx + x, my + y)
-                elif opcode == 'S':
-                    self._curve_to(2 * self.ctx_cursor_x - self.last_cx, 2 * self.ctx_cursor_y - self.last_cy,
-                                   *(next_point() + next_point()))
-                elif opcode == 's':
-                    mx = self.ctx_cursor_x
-                    my = self.ctx_cursor_y
-                    x1, y1 = 2 * self.ctx_cursor_x - self.last_cx, 2 * self.ctx_cursor_y - self.last_cy
-                    x2, y2 = next_point()
-                    x, y = next_point()
-                    
-                    self._curve_to(x1, y1, mx + x2, my + y2, mx + x, my + y)
-                elif opcode == 'A':
-                    rx, ry = next_point()
-                    phi = float(path_data.pop(0))
-                    large_arc = int(path_data.pop(0))
-                    sweep = int(path_data.pop(0))
-                    x, y = next_point()
-                    self._arc_to(rx, ry, phi, large_arc, sweep, x, y)
-                elif opcode == 'a':  # relative arc
-                    rx, ry = next_point()
-                    phi = float(path_data.pop(0))
-                    large_arc = int(path_data.pop(0))
-                    sweep = int(path_data.pop(0))
-                    x, y = next_point()
-                    self._arc_to(rx,  ry, phi, large_arc, sweep, self.ctx_cursor_x + x, self.ctx_cursor_y + y)
-                elif opcode in 'zZ':
-                    self._close_path()
-                elif opcode == 'L':
-                    self._line_to(*next_point())
-                elif opcode == 'l':
-                    x, y = next_point()
-                    self._line_to(self.ctx_cursor_x + x, self.ctx_cursor_y + y)
-                elif opcode == 'H':
-                    x = float(path_data.pop(0))
-                    self._line_to(x, self.ctx_cursor_y)
-                elif opcode == 'h':
-                    x = float(path_data.pop(0))
-                    self._line_to(self.ctx_cursor_x + x, self.ctx_cursor_y)
-                elif opcode == 'V':
-                    y = float(path_data.pop(0))
-                    self._line_to(self.ctx_cursor_x, y)
-                elif opcode == 'v':
-                    y = float(path_data.pop(0))
-                    self._line_to(self.ctx_cursor_x, self.ctx_cursor_y + y)
-                else:
-                    self._warn("Unrecognised opcode: " + opcode)
-                    raise Exception("Unrecognised opcode: " + opcode)
-            self._end_path(scope)
+            self._read_path(e, scope)
         elif self._is_rect_tag(e):
             x = float(e.get('x', 0))
             y = float(e.get('y', 0))
             h = float(e.get('height'))
             w = float(e.get('width'))
-            self._new_path()
+            self._start_path()
             self._set_cursor_position(x, y)
             self._line_to(x + w, y)
             self._line_to(x + w, y + h)
@@ -633,7 +647,7 @@ class SVG(object):
             def next_point():
                 return float(path_data.pop(0)), float(path_data.pop(0))
 
-            self._new_path()
+            self._start_path()
             while path_data:
                 self._line_to(*next_point())
             if e.tag.endswith('polygon'):
@@ -644,7 +658,7 @@ class SVG(object):
             y1 = float(e.get('y1'))
             x2 = float(e.get('x2'))
             y2 = float(e.get('y2'))
-            self._new_path()
+            self._start_path()
             self._set_cursor_position(x1, y1)
             self._line_to(x2, y2)
             self._end_path(scope)
@@ -652,9 +666,9 @@ class SVG(object):
             cx = float(e.get('cx'))
             cy = float(e.get('cy'))
             r = float(e.get('r'))
-            self._new_path()
-            for i in xrange(self._n_circle_points):
-                theta = 2 * i * math.pi / self._n_circle_points
+            self._start_path()
+            for i in xrange(self.config.circle_points):
+                theta = 2 * i * math.pi / self.config.circle_points
                 self._line_to(cx + r * math.cos(theta), cy + r * math.sin(theta))
             self._close_path()
             self._end_path(scope)
@@ -663,9 +677,9 @@ class SVG(object):
             cy = float(e.get('cy'))
             rx = float(e.get('rx'))
             ry = float(e.get('ry'))
-            self._new_path()
-            for i in xrange(self._n_circle_points):
-                theta = 2 * i * math.pi / self._n_circle_points
+            self._start_path()
+            for i in xrange(self.config.circle_points):
+                theta = 2 * i * math.pi / self.config.circle_points
                 self._line_to(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
             self._close_path()
             self._end_path(scope)
@@ -685,7 +699,7 @@ class SVG(object):
                 raise
         #self.transform = old_transform
 
-    def _new_path(self):
+    def _start_path(self):
         self.ctx_cursor_x = 0
         self.ctx_cursor_y = 0
         self.close_index = 0
@@ -738,7 +752,7 @@ class SVG(object):
             delta += math.pi * 2
         if not sweep and delta > 0:
             delta -= math.pi * 2
-        n_points = max(int(abs(self._n_circle_points * delta / (2 * math.pi))), 1)
+        n_points = max(int(abs(self.config.circle_points * delta / (2 * math.pi))), 1)
         
         for i in xrange(n_points + 1):
             theta = psi + i * delta / n_points
@@ -749,9 +763,9 @@ class SVG(object):
 
     def _quadratic_curve_to(self, x1, y1, x2, y2):
         x0, y0 = self.ctx_cursor_x, self.ctx_cursor_y
-
-        for i in xrange(self._n_bezier_points+1):
-            t = float(i) / self._n_bezier_points
+        n_bezier_points = self.config.bezier_points
+        for i in xrange(n_bezier_points+1):
+            t = float(i) / n_bezier_points
             q0x = (x1 - x0) * t + x0
             q0y = (y1 - y0) * t + y0
 
@@ -767,9 +781,10 @@ class SVG(object):
         self.ctx_cursor_x, self.ctx_cursor_y = x2, y2
 
     def _curve_to(self, x1, y1, x2, y2, x, y):
+        n_bezier_points = self.config.bezier_points
         if not self._bezier_coefficients:
-            for i in xrange(self._n_bezier_points + 1):
-                t = float(i) / self._n_bezier_points
+            for i in xrange(n_bezier_points + 1):
+                t = float(i) / n_bezier_points
                 t0 = (1 - t) ** 3
                 t1 = 3 * t * (1 - t) ** 2
                 t2 = 3 * t ** 2 * (1 - t)
