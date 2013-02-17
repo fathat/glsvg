@@ -54,5 +54,5 @@ class ViewportAs:
         glMatrixMode(GL_PROJECTION)
 
         glPopMatrix()
-        glViewport(viewport[0], viewport[1], viewport[2], viewport[3])
+        glViewport(int(viewport[0]), int(viewport[1]), int(viewport[2]), int(viewport[3]))
         glMatrixMode(GL_MODELVIEW)
