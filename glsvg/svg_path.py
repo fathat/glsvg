@@ -180,10 +180,8 @@ class SvgPath(object):
 
     def render(self):
         with self.transform:
-            if self.path:
-                self.render_stroke()
+
             if self.polygon:
-                glPolygonOffset(1, -0.1)
                 try:
                     if isinstance(self.fill, str) and self.fill in self.svg.patterns:
                         self.render_pattern_fill()
@@ -191,7 +189,8 @@ class SvgPath(object):
                         self.render_gradient_fill()
                 except Exception as exception:
                     traceback.print_exc(exception)
-                glPolygonOffset(1, 0)
+            if self.path:
+                self.render_stroke()
 
 
 

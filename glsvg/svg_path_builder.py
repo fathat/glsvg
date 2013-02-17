@@ -377,7 +377,7 @@ class SvgPathBuilder(object):
         self.ctx_path = []
 
     def _triangulate(self, looplist, scope):
-        if self.shape in ['line', 'polyline']:
+        if self.shape in ['line']:
             return None
         t_list = []
         self.ctx_curr_shape = []
