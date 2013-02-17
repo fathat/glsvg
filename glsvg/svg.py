@@ -40,6 +40,14 @@ class SVGConfig:
         self.allow_stencil = self.stencil_bits > 0
         self.bezier_points = BEZIER_POINTS
         self.circle_points = CIRCLE_POINTS
+        self.tolerance = TOLERANCE
+
+    def super_detailed(self):
+        cfg = SVGConfig()
+        cfg.bezier_points *= 10
+        cfg.circle_points *= 10
+        cfg.tolerance /= 100
+        return cfg
 
     def __repr__(self):
         return "<SVGConfig stencil_bits={0} fbo={1} circle_points={2} bezier_points={3}>".format(

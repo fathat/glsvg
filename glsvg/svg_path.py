@@ -33,7 +33,7 @@ class SvgPath(object):
         if self.is_pattern_part:
             svg.register_pattern_part(scope.parent.path_id, self)
 
-        path_builder = SvgPathBuilder(self, scope, element, svg.config)
+        path_builder = SvgPathBuilder(self, scope, element, svg.config if not self.is_pattern_part else svg.config.super_detailed())
         self.path = path_builder.path
         self.polygon = path_builder.polygon
         self.display_list = None
@@ -94,6 +94,37 @@ class SvgPath(object):
         if g:
             g.unapply_shader()
 
+    def bounding_box(self):
+        min_x = None
+        max_x = None
+        min_y = None
+        max_y = None
+
+        if self.polygon:
+            for vtx in self.polygon:
+                x, y = vtx
+                if min_x is None or x < min_x:
+                    min_x = x
+                if min_y is None or y < min_y:
+                    min_y = y
+                if max_x is None or x > max_x:
+                    max_x = x
+                if max_y is None or y > max_y:
+                    max_y = y
+        if self.path:
+            for p in self.path:
+                for vtx in p:
+                    x, y = vtx
+                    if min_x is None or x < min_x:
+                        min_x = x
+                    if min_y is None or y < min_y:
+                        min_y = y
+                    if max_x is None or x > max_x:
+                        max_x = x
+                    if max_y is None or y > max_y:
+                        max_y = y
+        return (min_x, min_y, max_x, max_y)
+
     def render_pattern_fill(self):
         fill = self.fill
         tris = self.polygon
@@ -103,10 +134,12 @@ class SvgPath(object):
             glEnable(GL_TEXTURE_2D)
             pattern.bind_texture()
 
+        min_x, min_y, max_x, max_y = self.bounding_box()
+
         glBegin(GL_TRIANGLES)
         for vtx in tris:
             glColor4f(1, 1, 1, 1)
-            glTexCoord2f(vtx[0]/20.0, vtx[1]/20.0)
+            glTexCoord2f((vtx[0]-min_x)/(max_x-min_x)/pattern.width, (vtx[1]-min_y)/(max_y-min_y)/pattern.width)
             glVertex3f(vtx[0], vtx[1], 0)
         glEnd()
 

@@ -364,7 +364,7 @@ class SvgPathBuilder(object):
                     continue
                 loop = [orig_loop[0]]
                 for pt in orig_loop:
-                    if (pt[0] - loop[-1][0])**2 + (pt[1] - loop[-1][1])**2 > TOLERANCE:
+                    if (pt[0] - loop[-1][0])**2 + (pt[1] - loop[-1][1])**2 > self.config.tolerance:
                         loop.append(pt)
                 path.append(loop)
 

@@ -13,6 +13,8 @@ class Pattern(object):
         self.svg = svg
         self.id = element.get('id')
         self.units = element.get('patternContentUnits', 'objectBoundingBox')
+        self.x = parse_float(element.get('x', '0.0'))
+        self.y = parse_float(element.get('y', '0.0'))
         self.width = parse_float(element.get('width', '1.0'))
         self.height = parse_float(element.get('height', '1.0'))
         self.render_texture = None
@@ -29,10 +31,24 @@ class Pattern(object):
             return
         self.render_texture.texture.unbind()
 
+    def extents(self):
+        min_x, min_y, max_x, max_y = 0, 0, 1, 1
+
+        for p in self.paths:
+            x0, y0, x1, y1 = p.bounding_box()
+            if x0 < min_x: min_x = x0
+            if y0 < min_y: min_y = y0
+            if x1 > max_x: max_x = x1
+            if y1 > max_y: max_y = y1
+
+        return min_x, min_y, max_x, max_y
+
     def render(self):
         #setup projection matrix..
+        #min_x, min_y, max_x, max_y = self.extents()
+
         with self.render_texture:
-            with ViewportAs(self.width, self.height, PATTERN_TEX_SIZE, PATTERN_TEX_SIZE):
+            with ViewportAs(self.x, self.y, self.width, self.height, PATTERN_TEX_SIZE, PATTERN_TEX_SIZE):
                 glClearColor(0.0, 0.5, 1.0, 1.0)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                 for path in self.paths:

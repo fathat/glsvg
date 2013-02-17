@@ -27,7 +27,9 @@ class DisplayListGenerator:
         glEndList()
 
 class ViewportAs:
-    def __init__(self, w, h, viewport_w=None, viewport_h=None, invert_y=False):
+    def __init__(self, x, y, w, h, viewport_w=None, viewport_h=None, invert_y=False):
+        self.x = x
+        self.y = y
         self.w = w
         self.h = h
         self.viewport_w = viewport_w if viewport_w else w
@@ -42,9 +44,9 @@ class ViewportAs:
         glPushMatrix()
         glLoadIdentity()
         if not self.invert_y:
-            glOrtho(0, self.w, 0, self.h, 0, 1)
+            glOrtho(self.x, self.w, self.y, self.h, 0, 1)
         else:
-            glOrtho(0, self.w, self.h, 0, 0, 1)
+            glOrtho(self.x, self.w, self.h, self.y, 0, 1)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         return self
