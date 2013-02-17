@@ -4,3 +4,8 @@ TOLERANCE = 0.001
 
 DEFAULT_FILL = [0, 0, 0, 255]
 DEFAULT_STROKE = [0, 0, 0, 0]
+
+PATTERN_TEX_SIZE = 1024
+
+#svg namespace
+XMLNS = 'http://www.w3.org/2000/svg'
