@@ -33,7 +33,7 @@ class Pattern(object):
 
         viewport = list(glGetFloatv(GL_VIEWPORT))
 
-        print "viewport", viewport
+
         glViewport(0, 0, PATTERN_TEX_SIZE, PATTERN_TEX_SIZE)
         glMatrixMode(GL_PROJECTION)
         glPushMatrix();
@@ -45,7 +45,6 @@ class Pattern(object):
         glClearColor(0.0, 0.5, 1.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         for path in self.paths:
-            print "path: ", str(path)
             path.render()
         glMatrixMode(GL_PROJECTION)
 

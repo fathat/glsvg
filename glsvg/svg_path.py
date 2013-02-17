@@ -9,110 +9,80 @@ from svg_constants import *
 import lines
 import traceback
 
-class SvgPath(object):
-    """
 
-    """
-
-    def __init__(self, svg, scope, element):
-        self.svg = svg
-        self.config = svg.config
-        self.scope = scope
-        self.transform = scope.transform
-        self.fill = scope.fill
-        self.stroke = scope.stroke
-        self.stroke_width = scope.stroke_width
-        self.path = None
-        self.polygon = None
-        self.id = scope.path_id
-        self.title = scope.path_title
-        self.description = scope.path_description
-        self.shape = None
-        self.is_pattern = scope.is_pattern
-        self.is_pattern_part = scope.is_pattern_part
+class SvgPathBuilder(object):
+    def __init__(self, path, scope, element, config):
         self._bezier_coefficients = []
-
-        if self.is_pattern_part:
-            svg.register_pattern_part(scope.parent.path_id, self)
-
-        self.parse_element(element)
-
-    def parse_element(self, e):
-        path = self
-        scope = self.scope
-        if e.tag.endswith('path'):
-            self.shape = 'path'
-            path._read_path(e, scope)
-        elif e.tag.endswith('rect'):
-            self.shape = 'rect'
-            x = float(e.get('x', 0))
-            y = float(e.get('y', 0))
-            h = float(e.get('height'))
-            w = float(e.get('width'))
-            self.x, self.y, self.w, self.h = x, y, w, h
-            path._start_path()
-            path._set_cursor_position(x, y)
-            path._line_to(x + w, y)
-            path._line_to(x + w, y + h)
-            path._line_to(x, y + h)
-            path._line_to(x, y)
-            path._end_path(scope)
-        elif e.tag.endswith('polyline') or e.tag.endswith('polygon'):
-            self.shape = 'polygon'
-            path_data = e.get('points')
-            path_data = re.findall("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
-
-            def next_point():
-                return float(path_data.pop(0)), float(path_data.pop(0))
-            path._start_path()
-            while path_data:
-                path._line_to(*next_point())
-            if e.tag.endswith('polygon'):
-                path._close_path()
-            path._end_path(scope)
-        elif e.tag.endswith('line'):
-            self.shape = 'line'
-            x1 = float(e.get('x1'))
-            y1 = float(e.get('y1'))
-            x2 = float(e.get('x2'))
-            y2 = float(e.get('y2'))
-            self.x1, self.x1, self.x2, self.y2 = x1, y1, x2, y2
-            path._start_path()
-            path._set_cursor_position(x1, y1)
-            path._line_to(x2, y2)
-            path._end_path(scope)
-        elif e.tag.endswith('circle'):
-            self.shape = 'circle'
-            cx = float(e.get('cx'))
-            cy = float(e.get('cy'))
-            r = float(e.get('r'))
-            self.cx, self.cy, self.r = cx, cy, r
-            path._start_path()
-            for i in xrange(self.config.circle_points):
-                theta = 2 * i * math.pi / self.config.circle_points
-                path._line_to(cx + r * math.cos(theta), cy + r * math.sin(theta))
-            path._close_path()
-            path._end_path(scope)
-        elif e.tag.endswith('ellipse'):
-            self.shape = 'ellipse'
-            cx = float(e.get('cx'))
-            cy = float(e.get('cy'))
-            rx = float(e.get('rx'))
-            ry = float(e.get('ry'))
-            self.cx, self.cy, self.rx, self.ry = cx, cy, rx, ry
-            path._start_path()
-            for i in xrange(self.config.circle_points):
-                theta = 2 * i * math.pi / self.config.circle_points
-                path._line_to(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
-            path._close_path()
-            path._end_path(scope)
-
-    def _start_path(self):
         self.ctx_cursor_x = 0
         self.ctx_cursor_y = 0
         self.close_index = 0
         self.ctx_path = []
         self.ctx_loop = []
+        self.scope = scope
+        self.config = config
+
+        e = element
+        if e.tag.endswith('path'):
+            path.shape = 'path'
+            self._read_path_commands(e, scope)
+        elif e.tag.endswith('rect'):
+            path.shape = 'rect'
+            x = float(e.get('x', 0))
+            y = float(e.get('y', 0))
+            h = float(e.get('height'))
+            w = float(e.get('width'))
+            path.x, path.y, path.w, path.h = x, y, w, h
+            self._set_cursor_position(x, y)
+            self._line_to(x + w, y)
+            self._line_to(x + w, y + h)
+            self._line_to(x, y + h)
+            self._line_to(x, y)
+            self._end_path()
+        elif e.tag.endswith('polyline') or e.tag.endswith('polygon'):
+            path.shape = 'polygon'
+            path_data = e.get('points')
+            path_data = re.findall("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
+
+            def next_point():
+                return float(path_data.pop(0)), float(path_data.pop(0))
+            while path_data:
+                self._line_to(*next_point())
+            if e.tag.endswith('polygon'):
+                self._close_path()
+            self._end_path()
+        elif e.tag.endswith('line'):
+            path.shape = 'line'
+            x1 = float(e.get('x1'))
+            y1 = float(e.get('y1'))
+            x2 = float(e.get('x2'))
+            y2 = float(e.get('y2'))
+            path.x1, path.x1, path.x2, path.y2 = x1, y1, x2, y2
+            self._set_cursor_position(x1, y1)
+            self._line_to(x2, y2)
+            self._end_path()
+        elif e.tag.endswith('circle'):
+            path.shape = 'circle'
+            cx = float(e.get('cx'))
+            cy = float(e.get('cy'))
+            r = float(e.get('r'))
+            path.cx, path.cy, path.r = cx, cy, r
+            for i in xrange(config.circle_points):
+                theta = 2 * i * math.pi / config.circle_points
+                self._line_to(cx + r * math.cos(theta), cy + r * math.sin(theta))
+            self._close_path()
+            self._end_path()
+        elif e.tag.endswith('ellipse'):
+            path.shape = 'ellipse'
+            cx = float(e.get('cx'))
+            cy = float(e.get('cy'))
+            rx = float(e.get('rx'))
+            ry = float(e.get('ry'))
+            path.cx, path.cy, path.rx, path.ry = cx, cy, rx, ry
+            for i in xrange(config.circle_points):
+                theta = 2 * i * math.pi / config.circle_points
+                self._line_to(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
+            self._close_path()
+            self._end_path()
 
     def _close_path(self):
         self.ctx_loop.append(self.ctx_loop[0][:])
@@ -122,16 +92,15 @@ class SvgPath(object):
     def _set_cursor_position(self, x, y):
         self.ctx_cursor_x = x
         self.ctx_cursor_y = y
-        self.ctx_loop.append([x,y])
+        self.ctx_loop.append([x, y])
 
-    def _read_path(self, e, scope):
+    def _read_path_commands(self, e, scope):
         path_data = e.get('d', '')
         path_data = re.findall("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
 
         def next_point():
             return float(path_data.pop(0)), float(path_data.pop(0))
 
-        self._start_path()
         opcode = ''
         while path_data:
             prev_opcode = opcode
@@ -228,7 +197,7 @@ class SvgPath(object):
             else:
                 self._warn("Unrecognised opcode: " + opcode)
                 raise Exception("Unrecognised opcode: " + opcode)
-        self._end_path(scope)
+        self._end_path()
 
     def _arc_to(self, rx, ry, phi, large_arc, sweep, x, y):
         # This function is made out of magical fairy dust
@@ -316,7 +285,8 @@ class SvgPath(object):
     def _line_to(self, x, y):
         self._set_cursor_position(x, y)
 
-    def _end_path(self, scope):
+    def _end_path(self):
+        scope = self.scope
         self.ctx_path.append(self.ctx_loop)
         if self.ctx_path:
             path = []
@@ -410,7 +380,40 @@ class SvgPath(object):
         return t_list
 
     def _warn(self, message):
-        print "Warning: SVG Parser (%s) - %s" % (self.filename, message)
+        print "Warning: SVG Parser - %s" % (message,)
+
+
+class SvgPath(object):
+    """
+
+    """
+
+    def __init__(self, svg, scope, element):
+        self.svg = svg
+        self.config = svg.config
+        self.scope = scope
+        self.transform = scope.transform
+        self.fill = scope.fill
+        self.stroke = scope.stroke
+        self.stroke_width = scope.stroke_width
+        self.path = None
+        self.polygon = None
+        self.id = scope.path_id
+        self.title = scope.path_title
+        self.description = scope.path_description
+        self.shape = None
+        self.is_pattern = scope.is_pattern
+        self.is_pattern_part = scope.is_pattern_part
+
+
+        if self.is_pattern_part:
+            svg.register_pattern_part(scope.parent.path_id, self)
+
+        path_builder = SvgPathBuilder(self, scope, element, svg.config)
+        self.path = path_builder.path
+        self.polygon = path_builder.polygon
+
+
 
     def render_stroke(self):
         stroke = self.stroke
