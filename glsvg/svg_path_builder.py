@@ -6,6 +6,8 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from svg_constants import *
 
+POINT_RE = re.compile("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
+PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 
 class SvgPathBuilder(object):
     def __init__(self, path, scope, element, config):
@@ -38,7 +40,7 @@ class SvgPathBuilder(object):
         elif e.tag.endswith('polyline') or e.tag.endswith('polygon'):
             path.shape = 'polygon'
             path_data = e.get('points')
-            path_data = re.findall("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
+            path_data = POINT_RE.findall(path_data)
 
             def next_point():
                 return float(path_data.pop(0)), float(path_data.pop(0))
@@ -93,7 +95,7 @@ class SvgPathBuilder(object):
 
     def _read_path_commands(self, e, scope):
         path_data = e.get('d', '')
-        path_data = re.findall("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)", path_data)
+        path_data = PATH_CMD_RE.findall(path_data)
 
         def next_point():
             return float(path_data.pop(0)), float(path_data.pop(0))
