@@ -1,7 +1,7 @@
 from parser_utils import *
-from matrix import *
+from vector_math import *
 import shader
-import shaders
+import svg_shader_constants
 import math
 
 
@@ -16,7 +16,7 @@ class GradientShaders:
         if not self._radial_shader:
             self._radial_shader = shader.make_program_from_src(
                                     "vs", "radial_ps",
-                                    shaders.vertex, shaders.radial)
+                                    svg_shader_constants.vertex, svg_shader_constants.radial)
         return self._radial_shader
 
     @property
@@ -24,7 +24,7 @@ class GradientShaders:
         if not self._linear_shader:
             self._linear_shader = shader.make_program_from_src(
                                     "vs", "linear_ps",
-                                    shaders.vertex, shaders.linear)
+                                    svg_shader_constants.vertex, svg_shader_constants.linear)
         return self._linear_shader
 
 gradient_shaders = GradientShaders()

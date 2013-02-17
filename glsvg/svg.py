@@ -24,7 +24,7 @@ import traceback
 from svg_constants import *
 
 from glutils import *
-from matrix import *
+from vector_math import *
 from parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
 from svg_path import SvgPath
