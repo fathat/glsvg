@@ -25,7 +25,7 @@ from svg_constants import *
 
 from glutils import *
 from vector_math import *
-from parser_utils import parse_color, parse_float, parse_style, parse_list
+from svg_parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
 
 from svg_path_builder import SvgElementScope
@@ -111,7 +111,13 @@ class SVG(object):
         self.n_lines = 0
         self.path_lookup = {}
         self._paths = []
+
+        #: Maps from pattern id to pattern
         self.patterns = {}
+
+        #: Maps from id to path definition
+        self.defs = {}
+
         self.filename = filename
         self._gradients = GradientContainer()
         self._generate_disp_list()
@@ -138,7 +144,6 @@ class SVG(object):
             self._stencil_mask = 1
             glStencilMask(0xFF)
             glClear(GL_STENCIL_BUFFER_BIT)
-
         return self._stencil_mask
 
     def is_stencil_enabled(self):

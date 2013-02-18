@@ -4,7 +4,7 @@ from glutils import ViewportAs
 
 import render_target
 
-from parser_utils import *
+from svg_parser_utils import *
 from svg_constants import *
 
 class Pattern(object):

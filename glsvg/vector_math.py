@@ -1,4 +1,4 @@
-from parser_utils import *
+from svg_parser_utils import *
 from OpenGL.GL import *
 import math
 

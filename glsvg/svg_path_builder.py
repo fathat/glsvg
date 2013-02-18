@@ -5,8 +5,9 @@ import string
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from svg_constants import *
-from parser_utils import *
+from svg_parser_utils import *
 from vector_math import Matrix
+import svg_style
 
 POINT_RE = re.compile("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
@@ -19,17 +20,18 @@ class SvgElementScope:
         self.parent = parent
         self.is_pattern = element.tag.endswith("pattern")
         self.is_pattern_part = False
+        self.is_def = element.tag.endswith("defs")
 
         if parent:
-            self.fill = parent.fill
-            self.stroke = parent.stroke
+            self.style = svg_style.SVGStyle(parent.style)
 
             if parent.is_pattern:
                 self.is_pattern_part = True
+            if parent.is_def:
+                self.is_def = True
         else:
-            self.fill = DEFAULT_FILL
-            self.stroke = DEFAULT_STROKE
-        self.stroke_width = None
+            self.style = svg_style.SVGStyle()
+        self.style.from_element(element)
 
         if parent:
             self.transform = parent.transform * Matrix(element.get('transform'))
@@ -39,46 +41,10 @@ class SvgElementScope:
             if not self.transform:
                 self.transform = Matrix([1, 0, 0, 1, 0, 0])
 
-        self.opacity = 1.0
-
         self.tag_type = element.tag
-
-        self.fill = parse_color(element.get('fill'), self.fill)
-        self.fill_rule = 'nonzero'
-
-        self.stroke = parse_color(element.get('stroke'), self.stroke)
-        self.stroke_width = float(element.get('stroke-width', 1.0))
-
-        self.opacity *= float(element.get('opacity', 1))
-        fill_opacity = float(element.get('fill-opacity', 1))
-        stroke_opacity = float(element.get('stroke-opacity', 1))
         self.path_id = element.get('id', '')
         self.path_title = element.findtext('{%s}title' % (XMLNS,))
         self.path_description = element.findtext('{%s}desc' % (XMLNS,))
-
-        style = element.get('style')
-        if style:
-            style_dict = parse_style(style)
-            if 'fill' in style_dict:
-                self.fill = parse_color(style_dict['fill'])
-            if 'fill-opacity' in style_dict:
-                fill_opacity *= float(style_dict['fill-opacity'])
-            if 'stroke' in style_dict:
-                self.stroke = parse_color(style_dict['stroke'])
-            if 'stroke-opacity' in style_dict:
-                stroke_opacity *= float(style_dict['stroke-opacity'])
-            if 'stroke-width' in style_dict:
-                sw = style_dict['stroke-width']
-                self.stroke_width = parse_float(sw)
-            if 'opacity' in style_dict:
-                fill_opacity *= float(style_dict['opacity'])
-                stroke_opacity *= float(style_dict['opacity'])
-            if 'fill-rule' in style_dict:
-                self.fill_rule = style_dict['fill-rule']
-        if isinstance(self.stroke, list):
-            self.stroke[3] = int(self.opacity * stroke_opacity * self.stroke[3])
-        if isinstance(self.fill, list):
-            self.fill[3] = int(self.opacity * fill_opacity * self.fill[3])
 
 
 class SVGPathBuilder(object):
@@ -374,11 +340,11 @@ class SVGPathBuilder(object):
                         loop.append(pt)
                 path.append(loop)
 
-            self.path = path if scope.stroke else None
-            self.polygon = self._triangulate(path, scope) if scope.fill else None
+            self.path = path if scope.style.stroke else None
+            self.polygon = self._triangulate(path, scope.style.fill_rule) if scope.style.fill else None
         self.ctx_path = []
 
-    def _triangulate(self, looplist, scope):
+    def _triangulate(self, looplist, fill_rule):
         if self.shape in ['line']:
             return None
         t_list = []
@@ -450,9 +416,9 @@ class SVGPathBuilder(object):
                 d_list.append(v_data)
             data_lists.append(d_list)
 
-        if scope.fill_rule == 'nonzero':
+        if fill_rule == 'nonzero':
             gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
-        elif scope.fill_rule == 'evenodd':
+        elif fill_rule == 'evenodd':
             gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD)
 
         gluTessBeginPolygon(tess, None)

@@ -9,6 +9,7 @@ import traceback
 from svg_path_builder import SVGPathBuilder
 from glutils import DisplayListGenerator
 
+
 class SVGPath(object):
     """
     Represents a single SVG path. This is usually
@@ -29,20 +30,14 @@ class SVGPath(object):
         self.config = svg.config
         self.transform = scope.transform
 
-        #: The fill pattern, may either be a color, a gradient id, or a pattern id
-        self.fill = scope.fill
-
-        #: The stroke pattern, may either be a color, a gradient id, or a pattern id
-        self.stroke = scope.stroke
-
-        #: The width of the line stroke
-        self.stroke_width = scope.stroke_width
+        #: The styling for this path
+        self.style = scope.style
 
         #: The actual path elements, as a list of vertices
-        self.path = None
+        self.outline = None
 
         #: The triangles that comprise the inner fill
-        self.polygon = None
+        self.triangles = None
 
         #: The id for the path
         self.id = scope.path_id
@@ -53,21 +48,24 @@ class SVGPath(object):
         #: Description metadata for the path
         self.description = scope.path_description
 
-        #: The base shape. Possible values:
+        #: The base shape. Possible values: path, rect, circle, ellipse, line, polygon, polyline
         self.shape = None
 
         self.is_pattern = scope.is_pattern
 
         #: If true, this SVG path is part of a pattern (ie, not directly
-        #: Rendered by default
+        #: rendered by default)
         self.is_pattern_part = scope.is_pattern_part
+
+        #: If true, this SVG path is part of a definition (not directly rendered)
+        self.is_def = scope.is_def
 
         if self.is_pattern_part:
             svg._register_pattern_part(scope.parent.path_id, self)
 
         path_builder = SVGPathBuilder(self, scope, element, svg.config if not self.is_pattern_part else svg.config.super_detailed())
-        self.path = path_builder.path
-        self.polygon = path_builder.polygon
+        self.outline = path_builder.path
+        self.triangles = path_builder.polygon
         self.display_list = None
 
     def _generate_display_list(self):
@@ -76,9 +74,9 @@ class SVGPath(object):
             self.display_list = dl
 
     def _render_stroke(self):
-        stroke = self.stroke
-        stroke_width = self.stroke_width
-        for loop in self.path:
+        stroke = self.style.stroke
+        stroke_width = self.style.stroke_width
+        for loop in self.outline:
             self.svg.n_lines += len(loop) - 1
             loop_plus = []
             for i in xrange(len(loop) - 1):
@@ -91,18 +89,18 @@ class SVGPath(object):
             lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
 
     def _render_stroke_stencil(self):
-        if not self.path:
+        if not self.outline:
             return
-        stroke_width = self.stroke_width
-        for loop in self.path:
+        stroke_width = self.style.stroke_width
+        for loop in self.outline:
             loop_plus = []
             for i in xrange(len(loop) - 1):
                 loop_plus += [loop[i], loop[i+1]]
             lines.draw_polyline(loop_plus, stroke_width)
 
     def _render_gradient_fill(self):
-        fill = self.fill
-        tris = self.polygon
+        fill = self.style.fill
+        tris = self.triangles
         self.svg.n_tris += len(tris)/3
         g = None
         if isinstance(fill, str):
@@ -137,8 +135,8 @@ class SVGPath(object):
         min_y = None
         max_y = None
 
-        if self.polygon:
-            for vtx in self.polygon:
+        if self.triangles:
+            for vtx in self.triangles:
                 x, y = vtx
                 if min_x is None or x < min_x:
                     min_x = x
@@ -148,8 +146,8 @@ class SVGPath(object):
                     max_x = x
                 if max_y is None or y > max_y:
                     max_y = y
-        if self.path:
-            for p in self.path:
+        if self.outline:
+            for p in self.outline:
                 for vtx in p:
                     x, y = vtx
                     if min_x is None or x < min_x:
@@ -163,8 +161,8 @@ class SVGPath(object):
         return (min_x, min_y, max_x, max_y)
 
     def _render_pattern_fill(self):
-        fill = self.fill
-        tris = self.polygon
+        fill = self.style.fill
+        tris = self.triangles
         pattern = None
         if fill in self.svg.patterns:
             pattern = self.svg.patterns[fill]
@@ -187,14 +185,14 @@ class SVGPath(object):
 
     def _render_stenciled(self):
         with self.transform:
-            if self.polygon:
+            if self.triangles:
                 try:
                     #if stencil is on
                     if self.svg.is_stencil_enabled():
                         glEnable(GL_STENCIL_TEST)
                         mask = self.svg._next_stencil_mask()
-                        glStencilFunc(GL_NEVER, mask, 0xFF);
-                        glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);  # draw mask id on test fail (always)
+                        glStencilFunc(GL_NEVER, mask, 0xFF)
+                        glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP)  # draw mask id on test fail (always)
                         glStencilMask(mask)
                         self._render_stroke_stencil()
 
@@ -202,7 +200,7 @@ class SVGPath(object):
                         glStencilFunc(GL_NOTEQUAL, mask, 0xFF)
 
                     #stencil fill
-                    if isinstance(self.fill, str) and self.fill in self.svg.patterns:
+                    if isinstance(self.style.fill, str) and self.style.fill in self.svg.patterns:
                         self._render_pattern_fill()
                     else:
                         self._render_gradient_fill()
@@ -212,22 +210,22 @@ class SVGPath(object):
                 finally:
                     if self.svg.is_stencil_enabled():
                         glDisable(GL_STENCIL_TEST)
-            if self.path:
+            if self.outline:
                 self._render_stroke()
 
     def render(self):
         """Render immediately to screen (no display list). Slow! Consider
         using SVG.draw(...) instead."""
         with self.transform:
-            if self.polygon:
+            if self.triangles:
                 try:
-                    if isinstance(self.fill, str) and self.fill in self.svg.patterns:
+                    if isinstance(self.style.fill, str) and self.style.fill in self.svg.patterns:
                         self._render_pattern_fill()
                     else:
                         self._render_gradient_fill()
                 except Exception as exception:
                     traceback.print_exc(exception)
-            if self.path:
+            if self.outline:
                 self._render_stroke()
 
 

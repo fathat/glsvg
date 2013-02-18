@@ -1,4 +1,4 @@
-from parser_utils import *
+from svg_parser_utils import *
 from vector_math import *
 import shader
 import svg_shader_constants

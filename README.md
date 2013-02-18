@@ -47,6 +47,7 @@ Likely to be not supported:
  - Animation
  - Text (this would be likely to require too many extra dependencies for fonts, but an easy workaround is to convert text
 objects to paths in your editor, ie Inkscape or Illustrator)
+ - CSS based style tags
 
 -----------------------------------------------
 Credits:
