@@ -28,8 +28,7 @@ from vector_math import *
 from svg_parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
 
-from svg_path_builder import SvgElementScope
-from svg_path import SVGPath
+from svg_path import SVGPath, SVGGroup
 from svg_pattern import *
 
 
@@ -74,7 +73,7 @@ class SVGConfig:
         )
 
 
-class SVG(object):
+class SVGDoc(object):
     """
     An SVG image document.
     
@@ -84,7 +83,7 @@ class SVG(object):
     """
 
     def __init__(self, filename, anchor_x=0, anchor_y=0, config=None):
-        """Creates an SVG object from a .svg or .svgz file.
+        """Creates an SVG document from a .svg or .svgz file.
 
         Args:
             `filename`: str
@@ -95,12 +94,6 @@ class SVG(object):
             `anchor_y`: float
                 The vertical anchor position for scaling and rotations. Defaults to 0. The symbolic 
                 values 'bottom', 'center' and 'top' are also accepted.
-            `bezier_points`: int
-                T Defaults to 10.
-            `circle_points`: int
-
-                Defaults to 10.
-                
         """
         if not config:
             self.config = SVGConfig()
@@ -200,6 +193,9 @@ class SVG(object):
         # prepare all the patterns
         self.prerender_patterns()
 
+        # prepare all the predefined paths
+        self.prerender_defs()
+
         with DisplayListGenerator() as display_list:
             self.disp_list = display_list
             self.render()
@@ -237,6 +233,13 @@ class SVG(object):
 
             self.disp_list()
 
+    def prerender_defs(self):
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        for d in self.defs.values():
+            d.render()
+
     def prerender_patterns(self):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -262,7 +265,7 @@ class SVG(object):
         if self.is_stencil_enabled():
             self._clear_stencils()
         for svg_path in self._paths:
-            if not svg_path.is_pattern and not svg_path.is_pattern_part:
+            #if not svg_path.is_pattern and not svg_path.is_pattern_part and not svg_path.is_def:
                 svg_path.render()
 
     def _parse_doc(self):
@@ -301,13 +304,19 @@ class SVG(object):
                 or e.tag.endswith('line')
                 or e.tag.endswith('circle') or e.tag.endswith('ellipse'))
 
-    def _parse_element(self, e, parent_scope=None):
-        scope = SvgElementScope(e, parent_scope)
-
+    def _parse_element(self, e, parent=None):
+        renderable = None
         if self._is_path_tag(e):
-            path = SVGPath(self, scope, e)
-            self._paths.append(path)
-            self.path_lookup[scope.path_id] = path
+            renderable = SVGPath(self, e, parent)
+            if not parent:
+                self._paths.append(renderable)
+
+            if renderable.id:
+                self.path_lookup[renderable.id] = renderable
+        elif e.tag.endswith('}g'):
+            renderable = SVGGroup(self, e, parent)
+            if not parent:
+                self._paths.append(renderable)
         elif e.tag.endswith("text"):
             self._warn("Text tag not supported")
         elif e.tag.endswith('linearGradient'):
@@ -316,9 +325,10 @@ class SVG(object):
             self._gradients[e.get('id')] = RadialGradient(e, self)
         elif e.tag.endswith('pattern'):
             self.patterns[e.get('id')] = Pattern(e, self)
+
         for c in e.getchildren():
             try:
-                self._parse_element(c, scope)
+                self._parse_element(c, renderable)
             except Exception, ex:
                 print 'Exception while parsing element', c
                 raise

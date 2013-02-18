@@ -23,6 +23,9 @@ def parse_float(txt):
     else:
         return float(txt)
 
+def parse_transform(txt):
+    pass
+
 def parse_color(c, default=None):
     if not c:
         return default

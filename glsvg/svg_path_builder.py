@@ -13,56 +13,22 @@ POINT_RE = re.compile("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 
 
-class SvgElementScope:
-    """The "scope" for processing an XML element. Intended for internal use only. """
-
-    def __init__(self, element, parent):
-        self.parent = parent
-        self.is_pattern = element.tag.endswith("pattern")
-        self.is_pattern_part = False
-        self.is_def = element.tag.endswith("defs")
-
-        if parent:
-            self.style = svg_style.SVGStyle(parent.style)
-
-            if parent.is_pattern:
-                self.is_pattern_part = True
-            if parent.is_def:
-                self.is_def = True
-        else:
-            self.style = svg_style.SVGStyle()
-        self.style.from_element(element)
-
-        if parent:
-            self.transform = parent.transform * Matrix(element.get('transform'))
-        else:
-            self.transform = Matrix(element.get('transform', None))
-
-            if not self.transform:
-                self.transform = Matrix([1, 0, 0, 1, 0, 0])
-
-        self.tag_type = element.tag
-        self.path_id = element.get('id', '')
-        self.path_title = element.findtext('{%s}title' % (XMLNS,))
-        self.path_description = element.findtext('{%s}desc' % (XMLNS,))
-
-
 class SVGPathBuilder(object):
-    def __init__(self, path, scope, element, config):
+    def __init__(self, path, element, config):
         self._bezier_coefficients = []
         self.ctx_cursor_x = 0
         self.ctx_cursor_y = 0
         self.close_index = 0
         self.ctx_path = []
         self.ctx_loop = []
-        self.scope = scope
         self.config = config
         self.shape = None
+        self.renderable = path
 
         e = element
         if e.tag.endswith('path'):
             self.shape = path.shape = 'path'
-            self._read_path_commands(e, scope)
+            self._read_path_commands(e, path)
         elif e.tag.endswith('rect'):
             self.shape = path.shape = 'rect'
             x = float(e.get('x', 0))
@@ -327,7 +293,6 @@ class SVGPathBuilder(object):
         self._set_cursor_position(x, y)
 
     def _end_path(self):
-        scope = self.scope
         self.ctx_path.append(self.ctx_loop)
         if self.ctx_path:
             path = []
@@ -340,8 +305,8 @@ class SVGPathBuilder(object):
                         loop.append(pt)
                 path.append(loop)
 
-            self.path = path if scope.style.stroke else None
-            self.polygon = self._triangulate(path, scope.style.fill_rule) if scope.style.fill else None
+            self.path = path if self.renderable.style.stroke else None
+            self.polygon = self._triangulate(path, self.renderable.style.fill_rule) if self.renderable.style.fill else None
         self.ctx_path = []
 
     def _triangulate(self, looplist, fill_rule):

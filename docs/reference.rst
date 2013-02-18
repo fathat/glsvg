@@ -1,7 +1,10 @@
 API Reference
 ====================
 
-.. autoclass:: glsvg.SVG
+.. autoclass:: glsvg.SVGDoc
+   :members:
+
+.. autoclass:: glsvg.SVGStyle
    :members:
 
 .. autoclass:: glsvg.SVGConfig

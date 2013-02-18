@@ -8,30 +8,72 @@ import traceback
 
 from svg_path_builder import SVGPathBuilder
 from glutils import DisplayListGenerator
+import svg_style
+from vector_math import Matrix
+from svg_constants import XMLNS
 
 
-class SVGPath(object):
+class SVGRenderableElement(object):
+
+    def __init__(self, svg, element, parent):
+
+        self.id = element.get('id', '')
+        self.parent = parent
+        if parent:
+            parent.add_child(self)
+
+        self.is_pattern = element.tag.endswith('pattern')
+        self.is_def = element.tag.endswith("defs")
+
+        self.style = svg_style.SVGStyle(parent.style if parent else None)
+        self.style.from_element(element)
+
+        self.title = element.findtext('{%s}title' % (XMLNS,))
+        self.description = element.findtext('{%s}desc' % (XMLNS,))
+
+        self.transform = Matrix(element.get('transform', None))
+        if not self.transform:
+            self.transform = Matrix([1, 0, 0, 1, 0, 0])
+
+        self.children = []
+        self.tag_type = element.tag
+
+    def add_child(self, child):
+        self.children.append(child)
+
+    @property
+    def absolute_transform(self):
+        if self.parent.transform:
+            return self.parent.absolute_transform * self.transform
+        return self.transform
+
+    def on_render(self):
+        pass
+
+    def render(self):
+        self.on_render()
+
+        for c in self.children:
+            c.render()
+
+
+class SVGGroup(SVGRenderableElement):
+    pass
+
+
+class SVGPath(SVGRenderableElement):
     """
     Represents a single SVG path. This is usually
     a distinct shape with a fill pattern,
     an outline, or both.
     """
 
-    def __init__(self, svg, scope, element):
-        """
-        Args:
-            svg (glsvg.SVG): The parent SVG document
+    def __init__(self, svg, element, parent):
 
-            scope (glsvg.svg_path_builder.SvgElementScope):
+        SVGRenderableElement.__init__(self, svg, element, parent)
 
-            element: The XML element to parse
-        """
         self.svg = svg
         self.config = svg.config
-        self.transform = scope.transform
-
-        #: The styling for this path
-        self.style = scope.style
 
         #: The actual path elements, as a list of vertices
         self.outline = None
@@ -39,33 +81,18 @@ class SVGPath(object):
         #: The triangles that comprise the inner fill
         self.triangles = None
 
-        #: The id for the path
-        self.id = scope.path_id
-
-        #: The title for the path
-        self.title = scope.path_title
-
-        #: Description metadata for the path
-        self.description = scope.path_description
-
         #: The base shape. Possible values: path, rect, circle, ellipse, line, polygon, polyline
         self.shape = None
 
-        self.is_pattern = scope.is_pattern
+        path_builder = SVGPathBuilder(
+                        self,
+                        element,
+                        svg.config)
 
-        #: If true, this SVG path is part of a pattern (ie, not directly
-        #: rendered by default)
-        self.is_pattern_part = scope.is_pattern_part
-
-        #: If true, this SVG path is part of a definition (not directly rendered)
-        self.is_def = scope.is_def
-
-        if self.is_pattern_part:
-            svg._register_pattern_part(scope.parent.path_id, self)
-
-        path_builder = SVGPathBuilder(self, scope, element, svg.config if not self.is_pattern_part else svg.config.super_detailed())
         self.outline = path_builder.path
+
         self.triangles = path_builder.polygon
+
         self.display_list = None
 
     def _generate_display_list(self):
@@ -213,7 +240,7 @@ class SVGPath(object):
             if self.outline:
                 self._render_stroke()
 
-    def render(self):
+    def on_render(self):
         """Render immediately to screen (no display list). Slow! Consider
         using SVG.draw(...) instead."""
         with self.transform:
@@ -227,7 +254,6 @@ class SVGPath(object):
                     traceback.print_exc(exception)
             if self.outline:
                 self._render_stroke()
-
 
 
     def __repr__(self):

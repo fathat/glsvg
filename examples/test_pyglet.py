@@ -65,7 +65,7 @@ class SVGWindow(pyglet.window.Window):
             next %= len(self.filelist)
         self.filename = os.path.join('../svgs', self.filelist[next])
         print 'Parsing', self.filename
-        self.svg = glsvg.SVG(self.filename)
+        self.svg = glsvg.SVGDoc(self.filename)
         self.svg.anchor_x, self.svg.anchor_y = self.svg.width/2, self.svg.height/2
         self.statslabel.text = "tris: " + str(self.svg.n_tris) + ", lines: " + str(self.svg.n_lines)
 
