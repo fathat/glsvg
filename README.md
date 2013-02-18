@@ -4,7 +4,6 @@ glSVG
 A python library for parsing and displaying SVG files
 using opengl, with a focus on being usable for games.
 
------------------------------------------------
 Usage
 -----------------------------------------------
 ```python
@@ -14,14 +13,13 @@ Usage
     # ...
 
     # load svg file
-    svgObj = glsvg.SVG(filename)
+    svg_doc = glsvg.SVG(filename)
 
     # draw svg file
-    svgObj.draw(x,y)
+    svg_doc.draw(x,y)
 ```
 
------------------------------------------------
-Status:
+Status
 -----------------------------------------------
 
 Requires:
@@ -48,7 +46,6 @@ Likely to be not supported:
  - Text (this would be likely to require too many extra dependencies for fonts, but an easy workaround is to convert text
 objects to paths in your editor, ie Inkscape or Illustrator)
 
------------------------------------------------
 Credits:
 -----------------------------------------------
 
