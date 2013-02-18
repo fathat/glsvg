@@ -1,6 +1,5 @@
------------------------------------------------
 glSVG
------------------------------------------------
+===============================================
 
 A python library for parsing and displaying SVG files
 using opengl, with a focus on being usable for games.
@@ -8,7 +7,7 @@ using opengl, with a focus on being usable for games.
 -----------------------------------------------
 Usage
 -----------------------------------------------
-
+```python
     import glsvg
 
     # initialize opengl context
@@ -19,34 +18,34 @@ Usage
 
     # draw svg file
     svgObj.draw(x,y)
-
+```
 
 -----------------------------------------------
 Status:
 -----------------------------------------------
 
 Requires:
-- PyOpenGL
+ - PyOpenGL
 
 Supported game libraries:
-- PyGame
-- Pyglet
+ - PyGame
+ - Pyglet
 
 Supported SVG features:
-- All SVG path commands (arc/curves/lines/etc.)
-- Basic SVG shapes (rectangle, ellipse)
-- Per-Pixel Linear and Radial Gradients
-- Parsable color names
-- Variable line widths and miter/bevel joints
+ - All SVG path commands (arc/curves/lines/etc.)
+ - Basic SVG shapes (rectangle, ellipse)
+ - Per-Pixel Linear and Radial Gradients
+ - Parsable color names
+ - Variable line widths and miter/bevel joints
 
 SVG Features In Progress:
-- SVG patterns
-- SVG effects (Drop shadow, blur, etc.)
-- More sophisticated line effects (patterns, arc joints, etc.)
+ - SVG patterns
+ - SVG effects (Drop shadow, blur, etc.)
+ - More sophisticated line effects (patterns, arc joints, etc.)
 
 Likely to be not supported:
-- Animation
-- Text (this would be likely to require too many extra dependencies for fonts, but an easy workaround is to convert text
+ - Animation
+ - Text (this would be likely to require too many extra dependencies for fonts, but an easy workaround is to convert text
 objects to paths in your editor, ie Inkscape or Illustrator)
 
 -----------------------------------------------
