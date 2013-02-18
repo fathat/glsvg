@@ -137,7 +137,6 @@ class LinearGradient(Gradient):
         self.y2 = 1
         Gradient.__init__(self, *args)
 
-
     def grad_value(self, pt):
         return ((pt[0] - self.x1) * (self.x2 - self.x1) + (pt[1] - self.y1) * (self.y2 - self.y1)) \
             / ((self.x1 - self.x2) ** 2 + (self.y1 - self.y2) ** 2)

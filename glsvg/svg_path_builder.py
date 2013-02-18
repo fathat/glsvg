@@ -13,6 +13,8 @@ PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 
 
 class SvgElementScope:
+    """The "scope" for processing an XML element. Intended for internal use only. """
+
     def __init__(self, element, parent):
         self.parent = parent
         self.is_pattern = element.tag.endswith("pattern")
@@ -79,7 +81,7 @@ class SvgElementScope:
             self.fill[3] = int(self.opacity * fill_opacity * self.fill[3])
 
 
-class SvgPathBuilder(object):
+class SVGPathBuilder(object):
     def __init__(self, path, scope, element, config):
         self._bezier_coefficients = []
         self.ctx_cursor_x = 0

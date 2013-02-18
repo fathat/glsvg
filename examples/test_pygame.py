@@ -1,5 +1,7 @@
 import pygame
+import sys
 import os
+sys.path.append(os.path.abspath('../'))
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -25,7 +27,7 @@ class App:
             prevFile = os.path.basename(self.filename)
             next = self.filelist.index(prevFile)+dir
             next %= len(self.filelist)
-        self.filename = os.path.join('svgs', self.filelist[next])
+        self.filename = os.path.join('../svgs', self.filelist[next])
         print 'Parsing', self.filename
         self.svg = glsvg.SVG(self.filename)
         self.svg.anchor_x, self.svg.anchor_y = self.svg.width/2, self.svg.height/2
@@ -34,7 +36,7 @@ class App:
         pygame.init()
         self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE|pygame.OPENGL|pygame.DOUBLEBUF)
         self._running = True
-        self.filelist = [f for f in os.listdir('svgs')
+        self.filelist = [f for f in os.listdir('../svgs')
                              if f.endswith('svg') or f.endswith('svgz')]
         self.filename = None
         self.svg = None

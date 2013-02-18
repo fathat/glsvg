@@ -6,34 +6,66 @@ from OpenGL.GL import *
 import lines
 import traceback
 
-from svg_path_builder import SvgPathBuilder
+from svg_path_builder import SVGPathBuilder
 from glutils import DisplayListGenerator
 
-class SvgPath(object):
+class SVGPath(object):
     """
-
+    Represents a single SVG path. This is usually
+    a distinct shape with a fill pattern,
+    an outline, or both.
     """
 
     def __init__(self, svg, scope, element):
+        """
+        Args:
+            svg (glsvg.SVG): The parent SVG document
+
+            scope (glsvg.svg_path_builder.SvgElementScope):
+
+            element: The XML element to parse
+        """
         self.svg = svg
         self.config = svg.config
         self.transform = scope.transform
+
+        #: The fill pattern, may either be a color, a gradient id, or a pattern id
         self.fill = scope.fill
+
+        #: The stroke pattern, may either be a color, a gradient id, or a pattern id
         self.stroke = scope.stroke
+
+        #: The width of the line stroke
         self.stroke_width = scope.stroke_width
+
+        #: The actual path elements, as a list of vertices
         self.path = None
+
+        #: The triangles that comprise the inner fill
         self.polygon = None
+
+        #: The id for the path
         self.id = scope.path_id
+
+        #: The title for the path
         self.title = scope.path_title
+
+        #: Description metadata for the path
         self.description = scope.path_description
+
+        #: The base shape. Possible values:
         self.shape = None
+
         self.is_pattern = scope.is_pattern
+
+        #: If true, this SVG path is part of a pattern (ie, not directly
+        #: Rendered by default
         self.is_pattern_part = scope.is_pattern_part
 
         if self.is_pattern_part:
-            svg.register_pattern_part(scope.parent.path_id, self)
+            svg._register_pattern_part(scope.parent.path_id, self)
 
-        path_builder = SvgPathBuilder(self, scope, element, svg.config if not self.is_pattern_part else svg.config.super_detailed())
+        path_builder = SVGPathBuilder(self, scope, element, svg.config if not self.is_pattern_part else svg.config.super_detailed())
         self.path = path_builder.path
         self.polygon = path_builder.polygon
         self.display_list = None
@@ -43,7 +75,7 @@ class SvgPath(object):
             self.render()
             self.display_list = dl
 
-    def render_stroke(self):
+    def _render_stroke(self):
         stroke = self.stroke
         stroke_width = self.stroke_width
         for loop in self.path:
@@ -58,7 +90,7 @@ class SvgPath(object):
                 strokes = [stroke for x in loop_plus]
             lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
 
-    def render_stroke_stencil(self):
+    def _render_stroke_stencil(self):
         if not self.path:
             return
         stroke_width = self.stroke_width
@@ -68,7 +100,7 @@ class SvgPath(object):
                 loop_plus += [loop[i], loop[i+1]]
             lines.draw_polyline(loop_plus, stroke_width)
 
-    def render_gradient_fill(self):
+    def _render_gradient_fill(self):
         fill = self.fill
         tris = self.polygon
         self.svg.n_tris += len(tris)/3
@@ -95,6 +127,11 @@ class SvgPath(object):
             g.unapply_shader()
 
     def bounding_box(self):
+        '''
+        returns a tuple describing the bounding box:
+
+        (min_x, min_y, max_x, max_y)
+        '''
         min_x = None
         max_x = None
         min_y = None
@@ -125,7 +162,7 @@ class SvgPath(object):
                         max_y = y
         return (min_x, min_y, max_x, max_y)
 
-    def render_pattern_fill(self):
+    def _render_pattern_fill(self):
         fill = self.fill
         tris = self.polygon
         pattern = None
@@ -148,27 +185,27 @@ class SvgPath(object):
 
         glDisable(GL_TEXTURE_2D)
 
-    def render_stenciled(self):
+    def _render_stenciled(self):
         with self.transform:
             if self.polygon:
                 try:
                     #if stencil is on
                     if self.svg.is_stencil_enabled():
                         glEnable(GL_STENCIL_TEST)
-                        mask = self.svg.next_stencil_mask()
+                        mask = self.svg._next_stencil_mask()
                         glStencilFunc(GL_NEVER, mask, 0xFF);
                         glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);  # draw mask id on test fail (always)
                         glStencilMask(mask)
-                        self.render_stroke_stencil()
+                        self._render_stroke_stencil()
 
                         #draw where stencil hasn't masked out
                         glStencilFunc(GL_NOTEQUAL, mask, 0xFF)
 
                     #stencil fill
                     if isinstance(self.fill, str) and self.fill in self.svg.patterns:
-                        self.render_pattern_fill()
+                        self._render_pattern_fill()
                     else:
-                        self.render_gradient_fill()
+                        self._render_gradient_fill()
 
                 except Exception as exception:
                     traceback.print_exc(exception)
@@ -176,25 +213,26 @@ class SvgPath(object):
                     if self.svg.is_stencil_enabled():
                         glDisable(GL_STENCIL_TEST)
             if self.path:
-                self.render_stroke()
+                self._render_stroke()
 
     def render(self):
+        """Render immediately to screen (no display list). Slow! Consider
+        using SVG.draw(...) instead."""
         with self.transform:
-
             if self.polygon:
                 try:
                     if isinstance(self.fill, str) and self.fill in self.svg.patterns:
-                        self.render_pattern_fill()
+                        self._render_pattern_fill()
                     else:
-                        self.render_gradient_fill()
+                        self._render_gradient_fill()
                 except Exception as exception:
                     traceback.print_exc(exception)
             if self.path:
-                self.render_stroke()
+                self._render_stroke()
 
 
 
     def __repr__(self):
-        return "<SvgPath id=%s title='%s' description='%s' transform=%s>" % (
+        return "<SVGPath id=%s title='%s' description='%s' transform=%s>" % (
             self.id, self.title, self.description, self.transform
         )

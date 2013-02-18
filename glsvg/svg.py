@@ -29,20 +29,36 @@ from parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
 
 from svg_path_builder import SvgElementScope
-from svg_path import SvgPath
+from svg_path import SVGPath
 from svg_pattern import *
 
 
 class SVGConfig:
+    """Configuration for how to render SVG objects, such as
+    the amount of detail allowed for bezier curves and availability of the stencil buffer"""
+
     def __init__(self):
+        #: The number of stencil bits available
         self.stencil_bits = glGetInteger(GL_STENCIL_BITS)
+
+        #: Whether or not framebuffer objects are allowed
         self.has_framebuffer_objects = True
+
+        #: Whether or not stencilling is allowed
         self.allow_stencil = self.stencil_bits > 0
+
+        #: The number of line segments into which to subdivide Bezier splines.
         self.bezier_points = BEZIER_POINTS
+
+        #: The number of line segments into which to subdivide circular and elliptic arcs.
         self.circle_points = CIRCLE_POINTS
+
+        #: The minimum distance at which neighboring points are merged
         self.tolerance = TOLERANCE
 
     def super_detailed(self):
+        """Returns a much more detailed copy of this config"""
+
         cfg = SVGConfig()
         cfg.bezier_points *= 10
         cfg.circle_points *= 10
@@ -60,7 +76,7 @@ class SVGConfig:
 
 class SVG(object):
     """
-    Opaque SVG image object.
+    An SVG image document.
     
     Users should instantiate this object once for each SVG file they wish to 
     render.
@@ -69,7 +85,8 @@ class SVG(object):
 
     def __init__(self, filename, anchor_x=0, anchor_y=0, config=None):
         """Creates an SVG object from a .svg or .svgz file.
-        
+
+        Args:
             `filename`: str
                 The name of the file to be loaded.
             `anchor_x`: float
@@ -79,9 +96,9 @@ class SVG(object):
                 The vertical anchor position for scaling and rotations. Defaults to 0. The symbolic 
                 values 'bottom', 'center' and 'top' are also accepted.
             `bezier_points`: int
-                The number of line segments into which to subdivide Bezier splines. Defaults to 10.
+                T Defaults to 10.
             `circle_points`: int
-                The number of line segments into which to subdivide circular and elliptic arcs. 
+
                 Defaults to 10.
                 
         """
@@ -89,7 +106,7 @@ class SVG(object):
             self.config = SVGConfig()
         else:
             self.config = config
-        self.stencil_mask = 0
+        self._stencil_mask = 0
         self.n_tris = 0
         self.n_lines = 0
         self.path_lookup = {}
@@ -101,25 +118,34 @@ class SVG(object):
         self._anchor_x = anchor_x
         self._anchor_y = anchor_y
 
+    def get_path_ids(self):
+        """Returns all the path ids"""
+        return self.path_lookup.keys()
+
+    def get_path_by_id(self, id):
+        """Returns a path for the given id, or key error"""
+        return self.path_lookup[id]
+
     def test_capabilities(self):
         return None
 
-    def next_stencil_mask(self):
-        self.stencil_mask += 1
+    def _next_stencil_mask(self):
+        self._stencil_mask += 1
 
         # if we run out of unique bits in stencil buffer,
         # clear stencils and restart
-        if self.stencil_mask > (2**self.config.stencil_bits-1):
-            self.stencil_mask = 1
+        if self._stencil_mask > (2**self.config.stencil_bits-1):
+            self._stencil_mask = 1
             glStencilMask(0xFF)
             glClear(GL_STENCIL_BUFFER_BIT)
 
-        return self.stencil_mask
+        return self._stencil_mask
 
     def is_stencil_enabled(self):
+        """Indicates if this svg document will use the stencil buffer for rendering"""
         return self.config.allow_stencil
 
-    def register_pattern_part(self, pattern_id, pattern_svg_path):
+    def _register_pattern_part(self, pattern_id, pattern_svg_path):
         print "registering pattern"
         self.patterns[pattern_id].paths.append(pattern_svg_path)
 
@@ -136,7 +162,8 @@ class SVG(object):
     
     def _get_anchor_x(self):
         return self._anchor_x
-    
+
+    #: Where the document is anchored. Valid values are numerical, or 'left', 'right', 'center'
     anchor_x = property(_get_anchor_x, _set_anchor_x)
     
     def _set_anchor_y(self, anchor_y):
@@ -152,7 +179,8 @@ class SVG(object):
 
     def _get_anchor_y(self):
         return self._anchor_y
-        
+
+    #: Where the document is anchored. Valid values are numerical, or 'top', 'bottom', 'center'
     anchor_y = property(_get_anchor_y, _set_anchor_y)
     
     def _generate_disp_list(self):
@@ -174,7 +202,7 @@ class SVG(object):
     def draw(self, x, y, z=0, angle=0, scale=1):
         """Draws the SVG to screen.
         
-        :Parameters
+        Args:
             `x` : float
                 The x-coordinate at which to draw.
             `y` : float
@@ -221,6 +249,7 @@ class SVG(object):
         glClear(GL_STENCIL_BUFFER_BIT)
 
     def render(self):
+        """Render the SVG file without any display lists or transforms. Use draw instead. """
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         #glEnable(GL_DEPTH_TEST)
@@ -246,7 +275,6 @@ class SVG(object):
 
         self.width = parse_float(wm)
         self.height = parse_float(hm)
-        #self.transform = Matrix([1, 0, 0, 1, 0, 0])
 
         if self.tree._root.get("viewBox"):
             x, y, w, h = (parse_float(x) for x in parse_list(self.tree._root.get("viewBox")))
@@ -272,7 +300,7 @@ class SVG(object):
         scope = SvgElementScope(e, parent_scope)
 
         if self._is_path_tag(e):
-            path = SvgPath(self, scope, e)
+            path = SVGPath(self, scope, e)
             self._paths.append(path)
             self.path_lookup[scope.path_id] = path
         elif e.tag.endswith("text"):

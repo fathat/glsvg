@@ -1,5 +1,9 @@
-#! usr/bin/env python 
+#! usr/bin/env python
+import sys
 import os
+sys.path.append(os.path.abspath('../'))
+
+
 import pyglet
 from pyglet.gl import *
 import glsvg
@@ -20,7 +24,7 @@ class SVGWindow(pyglet.window.Window):
             color=(0,0,0,255))
         self.instruction_label.anchor_y = "top"
 
-        self.filelist = [f for f in os.listdir('svgs')
+        self.filelist = [f for f in os.listdir('../svgs')
                     if f.endswith('svg') or f.endswith('svgz')]
 
         glClearColor(1,1,1,1)
@@ -59,7 +63,7 @@ class SVGWindow(pyglet.window.Window):
             prevFile = os.path.basename(self.filename)
             next = self.filelist.index(prevFile)+dir
             next %= len(self.filelist)
-        self.filename = os.path.join('svgs', self.filelist[next])
+        self.filename = os.path.join('../svgs', self.filelist[next])
         print 'Parsing', self.filename
         self.svg = glsvg.SVG(self.filename)
         self.svg.anchor_x, self.svg.anchor_y = self.svg.width/2, self.svg.height/2
