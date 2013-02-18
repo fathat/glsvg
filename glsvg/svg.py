@@ -125,9 +125,6 @@ class SVGDoc(object):
         """Returns a path for the given id, or key error"""
         return self.path_lookup[id]
 
-    def test_capabilities(self):
-        return None
-
     def _next_stencil_mask(self):
         self._stencil_mask += 1
 
@@ -324,7 +321,8 @@ class SVGDoc(object):
         elif e.tag.endswith('radialGradient'):
             self._gradients[e.get('id')] = RadialGradient(e, self)
         elif e.tag.endswith('pattern'):
-            self.patterns[e.get('id')] = Pattern(e, self)
+            renderable =  SVGPattern(self, e, parent)
+            self.patterns[e.get('id')] = renderable
 
         for c in e.getchildren():
             try:

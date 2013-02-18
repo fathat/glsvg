@@ -6,19 +6,21 @@ import render_target
 
 from svg_parser_utils import *
 from svg_constants import *
+from svg_path import SVGRenderableElement
 
-class Pattern(object):
 
-    def __init__(self, element, svg):
+class SVGPattern(SVGRenderableElement):
+
+    def __init__(self, svg, element, parent):
+        SVGRenderableElement.__init__(self, svg, element, parent)
+
         self.svg = svg
-        self.id = element.get('id')
         self.units = element.get('patternContentUnits', 'objectBoundingBox')
         self.x = parse_float(element.get('x', '0.0'))
         self.y = parse_float(element.get('y', '0.0'))
         self.width = parse_float(element.get('width', '1.0'))
         self.height = parse_float(element.get('height', '1.0'))
         self.render_texture = None
-        self.paths = []
         self.render_texture = render_target.RenderTarget(PATTERN_TEX_SIZE, PATTERN_TEX_SIZE)
 
     def bind_texture(self):
@@ -34,7 +36,7 @@ class Pattern(object):
     def extents(self):
         min_x, min_y, max_x, max_y = 0, 0, 1, 1
 
-        for p in self.paths:
+        for p in self.children:
             x0, y0, x1, y1 = p.bounding_box()
             if x0 < min_x: min_x = x0
             if y0 < min_y: min_y = y0
@@ -54,6 +56,6 @@ class Pattern(object):
             with ViewportAs(min_x*self.x, min_y*self.y, max_x*self.width, max_y*self.height, PATTERN_TEX_SIZE, PATTERN_TEX_SIZE):
                 glClearColor(0.0, 0.5, 1.0, 1.0)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-                for path in self.paths:
-                    path.render()
+                for c in self.children:
+                    c.render()
 
