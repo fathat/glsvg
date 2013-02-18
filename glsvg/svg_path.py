@@ -19,11 +19,14 @@ class SVGRenderableElement(object):
 
         self.id = element.get('id', '')
         self.parent = parent
-        if parent:
-            parent.add_child(self)
+
 
         self.is_pattern = element.tag.endswith('pattern')
-        self.is_def = element.tag.endswith("defs")
+        self.is_def = False
+
+        if parent:
+            parent.add_child(self)
+            self.is_def = parent.is_def
 
         self.style = svg_style.SVGStyle(parent.style if parent else None)
         self.style.from_element(element)
@@ -59,6 +62,17 @@ class SVGRenderableElement(object):
 
 class SVGGroup(SVGRenderableElement):
     pass
+
+
+class SVGUse(SVGRenderableElement):
+    def __init__(self, svg, element, parent):
+        SVGRenderableElement.__init__(self, svg, element, parent)
+
+
+class SVGDefs(SVGRenderableElement):
+    def __init__(self, svg, element, parent):
+        SVGRenderableElement.__init__(self, svg, element, parent)
+        self.is_def = True
 
 
 class SVGPath(SVGRenderableElement):
