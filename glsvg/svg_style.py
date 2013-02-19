@@ -28,11 +28,13 @@ class SVGStyle(object):
         if inherit_from:
             self.fill = inherit_from.fill
             self.stroke = inherit_from.stroke
+            self.fill_rule = inherit_from.fill_rule
+            self.stroke_width = inherit_from.stroke_width
 
     def from_element(self, element):
         """Read relevant attributes off XML element"""
         self.fill = parse_color(element.get('fill'), self.fill)
-        self.fill_rule = 'nonzero'
+        self.fill_rule = element.get('fill-rule', self.fill_rule)
 
         self.stroke = parse_color(element.get('stroke'), self.stroke)
         self.stroke_width = float(element.get('stroke-width', 1.0))
