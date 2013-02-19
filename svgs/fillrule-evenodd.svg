@@ -12,7 +12,7 @@
   </defs>
   <g fill-rule="evenodd" fill="red" stroke="black" stroke-width="3" >
     <path d="M 250,75 L 323,301 131,161 369,161 177,301 z" />
-    <use xlink:href="#Triangle" transform="translate(306.21 249) rotate(72)" overflow="visible"  />
+    <use xlink:href="#Triangle" transform="translate(306.21,249) rotate(72)" overflow="visible"  />
     <use xlink:href="#Triangle" transform="translate(175.16,193.2) rotate(216)" overflow="visible"  />
     <use xlink:href="#Triangle" transform="translate(314.26,161) rotate(0)" overflow="visible"  />
     <use xlink:href="#Triangle" transform="translate(221.16,268.8) rotate(144)" overflow="visible"  />

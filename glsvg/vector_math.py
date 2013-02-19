@@ -109,7 +109,13 @@ class Matrix(object):
                 self.values = [1, 0, 0, 1, x, y]
             elif string.startswith('scale('):
                 sx, sy = [float(x) for x in parse_list(string[6:-1])]
-                self.values = [sx, 0, 0, sy, 0, 0]           
+                self.values = [sx, 0, 0, sy, 0, 0]
+            elif string.startswith('rotate('):
+                angle = float(string[7:-1])
+                theta = radian(angle)
+
+                #where does angle go in here?
+                self.values = [math.cos(theta), math.sin(theta), -math.sin(theta), math.cos(theta), 0, 0]
         elif string is not None:
             self.values = list(string)
 
@@ -134,7 +140,11 @@ class Matrix(object):
                 v[2], v[3], 0.0, 0.0,
                 0.0,  0.0,  1.0, 0.0,
                 v[4], v[5], 0.0, 1.0]
-    
+
+    @classmethod
+    def identity(cls):
+        return Matrix([1, 0, 0, 1, 0, 0])
+
     def inverse(self):
         d = float(self.values[0] * self.values[3] - self.values[1] * self.values[2])
         return Matrix([self.values[3] / d, -self.values[1] / d, -self.values[2] / d, self.values[0] / d,

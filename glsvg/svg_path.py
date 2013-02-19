@@ -34,9 +34,18 @@ class SVGRenderableElement(object):
         self.title = element.findtext('{%s}title' % (XMLNS,))
         self.description = element.findtext('{%s}desc' % (XMLNS,))
 
-        self.transform = Matrix(element.get('transform', None))
-        if not self.transform:
-            self.transform = Matrix([1, 0, 0, 1, 0, 0])
+        #construct a matrix for each transform
+        t_acc = Matrix.identity()
+
+        transform_str = element.get('transform', None)
+        if transform_str:
+            transforms = transform_str.strip().split(' ')
+
+            for tstring in transforms:
+                t_acc = t_acc * Matrix(tstring)
+
+        self.transform = t_acc
+
 
         self.children = []
         self.tag_type = element.tag
@@ -46,7 +55,7 @@ class SVGRenderableElement(object):
 
     @property
     def absolute_transform(self):
-        if self.parent.transform:
+        if self.parent:
             return self.parent.absolute_transform * self.transform
         return self.transform
 
@@ -64,15 +73,33 @@ class SVGGroup(SVGRenderableElement):
     pass
 
 
+XLINK_NS = "{http://www.w3.org/1999/xlink}"
+
 class SVGUse(SVGRenderableElement):
     def __init__(self, svg, element, parent):
         SVGRenderableElement.__init__(self, svg, element, parent)
+        self.svg = svg
+        self.target = element.get(XLINK_NS + "href", None)
+
+        #clip off "#"
+        if self.target:
+            self.target = self.target[1:]
+
+    def render(self):
+        with self.absolute_transform:
+            self.svg.defs[self.target].render()
+
 
 
 class SVGDefs(SVGRenderableElement):
     def __init__(self, svg, element, parent):
         SVGRenderableElement.__init__(self, svg, element, parent)
+        self.svg = svg
         self.is_def = True
+
+    def add_child(self, child):
+        self.svg.defs[child.id] = child
+        self.children.append(child)
 
 
 class SVGPath(SVGRenderableElement):
@@ -257,7 +284,7 @@ class SVGPath(SVGRenderableElement):
     def on_render(self):
         """Render immediately to screen (no display list). Slow! Consider
         using SVG.draw(...) instead."""
-        with self.transform:
+        with self.absolute_transform:
             if self.triangles:
                 try:
                     if isinstance(self.style.fill, str) and self.style.fill in self.svg.patterns:

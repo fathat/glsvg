@@ -28,7 +28,7 @@ from vector_math import *
 from svg_parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
 
-from svg_path import SVGPath, SVGGroup, SVGDefs
+from svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse
 from svg_pattern import *
 
 
@@ -325,6 +325,8 @@ class SVGDoc(object):
             self.patterns[e.get('id')] = renderable
         elif e.tag.endswith('defs'):
             renderable = SVGDefs(self, e, parent)
+        elif e.tag.endswith('use'):
+            renderable = SVGUse(self, e, parent)
         for c in e.getchildren():
             try:
                 self._parse_element(c, renderable)
