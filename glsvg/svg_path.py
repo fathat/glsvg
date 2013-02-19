@@ -16,22 +16,30 @@ from svg_constants import XMLNS
 class SVGRenderableElement(object):
 
     def __init__(self, svg, element, parent):
-
+        #: The id of the element
         self.id = element.get('id', '')
+
+        #: The parent element
         self.parent = parent
 
-
+        #: Is this element a pattern?
         self.is_pattern = element.tag.endswith('pattern')
+
+        #: Is this element a definition?
         self.is_def = False
 
         if parent:
             parent.add_child(self)
             self.is_def = parent.is_def
 
+        #: The element style (possibly with inherited traits from parent style)
         self.style = svg_style.SVGStyle(parent.style if parent else None)
         self.style.from_element(element)
 
+        #: Optional element title
         self.title = element.findtext('{%s}title' % (XMLNS,))
+
+        #: Optional element description. Useful for embedding metadata.
         self.description = element.findtext('{%s}desc' % (XMLNS,))
 
         #construct a matrix for each transform
@@ -44,17 +52,22 @@ class SVGRenderableElement(object):
             for tstring in transforms:
                 t_acc = t_acc * Matrix(tstring)
 
+        #: Element transforms
         self.transform = t_acc
 
-
+        #: Children elements
         self.children = []
+
+        #: XML tag this was originally.
         self.tag_type = element.tag
 
     def add_child(self, child):
+        """Add a child to this element class (usually children register with parent)"""
         self.children.append(child)
 
     @property
     def absolute_transform(self):
+        """Return this transform, multiplied by chain of parents"""
         if self.parent:
             return self.parent.absolute_transform * self.transform
         return self.transform
@@ -75,7 +88,10 @@ class SVGGroup(SVGRenderableElement):
 
 XLINK_NS = "{http://www.w3.org/1999/xlink}"
 
+
 class SVGUse(SVGRenderableElement):
+    """Represents an SVG "use" directive, to reuse a predefined path"""
+
     def __init__(self, svg, element, parent):
         SVGRenderableElement.__init__(self, svg, element, parent)
         self.svg = svg
@@ -90,8 +106,9 @@ class SVGUse(SVGRenderableElement):
             self.svg.defs[self.target].render()
 
 
-
 class SVGDefs(SVGRenderableElement):
+    """Represents an SVG "defs" directive, to define paths without drawing them"""
+
     def __init__(self, svg, element, parent):
         SVGRenderableElement.__init__(self, svg, element, parent)
         self.svg = svg
@@ -112,7 +129,7 @@ class SVGPath(SVGRenderableElement):
     def __init__(self, svg, element, parent):
 
         SVGRenderableElement.__init__(self, svg, element, parent)
-
+        #: The original SVG file
         self.svg = svg
         self.config = svg.config
 

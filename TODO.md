@@ -9,13 +9,13 @@ DONE:
  - [x] Line
  - [x] Polyline
  - [x] Fill-rule (nonzero & evenodd)
- - [x] Move style to own class
+ - [x] Inherited styles
+ - [x] Support the "use" element
 
 Partially done:
  - [*] Patterns
 
 TODO:
- - [ ] Support the "use" element
  - [ ] Support creating a texture from SVG file
  - [ ] Support moving interior SVG path transforms
  - [ ] Support rendering interior SVG path transforms separately
