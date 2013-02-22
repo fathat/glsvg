@@ -1,30 +1,30 @@
-from OpenGL.GL import *
+import OpenGL.GL as gl
 
 
 class CurrentTransform:
     def __enter__(self):
-        glPushMatrix()
+        gl.glPushMatrix()
         return self
 
     def __exit__(self, type, value, traceback):
-        glPopMatrix()
+        gl.glPopMatrix()
 
 
 class DisplayList:
     def __init__(self):
-        self.display_list_id = glGenLists(1)
+        self.display_list_id = gl.glGenLists(1)
 
     def __call__(self):
-        glCallList(self.display_list_id)
+        gl.glCallList(self.display_list_id)
 
 class DisplayListGenerator:
     def __enter__(self):
         dl = DisplayList()
-        glNewList(dl.display_list_id, GL_COMPILE)
+        gl.glNewList(dl.display_list_id, gl.GL_COMPILE)
         return dl
 
     def __exit__(self, type, value, traceback):
-        glEndList()
+        gl.glEndList()
 
 class ViewportAs:
     def __init__(self, x, y, w, h, viewport_w=None, viewport_h=None, invert_y=False):
@@ -37,24 +37,24 @@ class ViewportAs:
         self.invert_y = False
 
     def __enter__(self):
-        self.old_viewport = list(glGetFloatv(GL_VIEWPORT))
+        self.old_viewport = list(gl.glGetFloatv(gl.GL_VIEWPORT))
 
-        glViewport(0, 0, self.viewport_w, self.viewport_h)
-        glMatrixMode(GL_PROJECTION)
-        glPushMatrix()
-        glLoadIdentity()
+        gl.glViewport(0, 0, self.viewport_w, self.viewport_h)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glPushMatrix()
+        gl.glLoadIdentity()
         if not self.invert_y:
-            glOrtho(self.x, self.w, self.y, self.h, 0, 1)
+            gl.glOrtho(self.x, self.w, self.y, self.h, 0, 1)
         else:
-            glOrtho(self.x, self.w, self.h, self.y, 0, 1)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
+            gl.glOrtho(self.x, self.w, self.h, self.y, 0, 1)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
         return self
 
     def __exit__(self, type, value, traceback):
         viewport = self.old_viewport
-        glMatrixMode(GL_PROJECTION)
+        gl.glMatrixMode(gl.GL_PROJECTION)
 
-        glPopMatrix()
-        glViewport(int(viewport[0]), int(viewport[1]), int(viewport[2]), int(viewport[3]))
-        glMatrixMode(GL_MODELVIEW)
+        gl.glPopMatrix()
+        gl.glViewport(int(viewport[0]), int(viewport[1]), int(viewport[2]), int(viewport[3]))
+        gl.glMatrixMode(gl.GL_MODELVIEW)

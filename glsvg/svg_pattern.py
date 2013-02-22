@@ -1,4 +1,4 @@
-from OpenGL.GL import *
+import OpenGL.GL as gl
 
 from glutils import ViewportAs
 
@@ -10,7 +10,6 @@ from svg_path import SVGRenderableElement
 
 
 class SVGPattern(SVGRenderableElement):
-
     def __init__(self, svg, element, parent):
         SVGRenderableElement.__init__(self, svg, element, parent)
 
@@ -53,9 +52,10 @@ class SVGPattern(SVGRenderableElement):
         print self.extents()
 
         with self.render_texture:
-            with ViewportAs(min_x*self.x, min_y*self.y, max_x*self.width, max_y*self.height, PATTERN_TEX_SIZE, PATTERN_TEX_SIZE):
-                glClearColor(0.0, 0.5, 1.0, 1.0)
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            with ViewportAs(min_x * self.x, min_y * self.y, max_x * self.width, max_y * self.height, PATTERN_TEX_SIZE,
+                            PATTERN_TEX_SIZE):
+                gl.glClearColor(0.0, 0.5, 1.0, 1.0)
+                gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
                 for c in self.children:
                     c.render()
 

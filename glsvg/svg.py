@@ -7,7 +7,7 @@ Example usage:
     
 """
 
-from OpenGL.GL import *
+import OpenGL.GL as gl
 
 try:
     import xml.etree.ElementTree
@@ -38,7 +38,7 @@ class SVGConfig:
 
     def __init__(self):
         #: The number of stencil bits available
-        self.stencil_bits = glGetInteger(GL_STENCIL_BITS)
+        self.stencil_bits = gl.glGetInteger(gl.GL_STENCIL_BITS)
 
         #: Whether or not framebuffer objects are allowed
         self.has_framebuffer_objects = True
@@ -132,8 +132,8 @@ class SVGDoc(object):
         # clear stencils and restart
         if self._stencil_mask > (2**self.config.stencil_bits-1):
             self._stencil_mask = 1
-            glStencilMask(0xFF)
-            glClear(GL_STENCIL_BUFFER_BIT)
+            gl.glStencilMask(0xFF)
+            gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
         return self._stencil_mask
 
     def is_stencil_enabled(self):
@@ -217,46 +217,46 @@ class SVGDoc(object):
         """
 
         with CurrentTransform():
-            glTranslatef(x, y, z)
+            gl.glTranslatef(x, y, z)
             if angle:
-                glRotatef(angle, 0, 0, 1)
+                gl.glRotatef(angle, 0, 0, 1)
             if scale != 1:
                 try:
-                    glScalef(scale[0], scale[1], 1)
+                    gl.glScalef(scale[0], scale[1], 1)
                 except TypeError:
-                    glScalef(scale, scale, 1)
+                    gl.glScalef(scale, scale, 1)
             if self._a_x or self._a_y:
-                glTranslatef(-self._a_x, -self._a_y, 0)
+                gl.glTranslatef(-self._a_x, -self._a_y, 0)
 
             self.disp_list()
 
     def prerender_defs(self):
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
         for d in self.defs.values():
             d.render()
 
     def prerender_patterns(self):
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
         #clear out stencils
         if self.is_stencil_enabled():
-            glStencilMask(0xFF)
-            glClear(GL_STENCIL_BUFFER_BIT)
+            gl.glStencilMask(0xFF)
+            gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
 
         for pattern in self.patterns.values():
             pattern.render()
 
     def _clear_stencils(self):
-        glStencilMask(0xFF)
-        glClear(GL_STENCIL_BUFFER_BIT)
+        gl.glStencilMask(0xFF)
+        gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
 
     def render(self):
         """Render the SVG file without any display lists or transforms. Use draw instead. """
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         #glEnable(GL_DEPTH_TEST)
         #clear out stencils
         if self.is_stencil_enabled():

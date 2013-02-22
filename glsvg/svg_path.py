@@ -2,7 +2,7 @@ import math
 import re
 import string
 
-from OpenGL.GL import *
+import graphics
 import lines
 import traceback
 
@@ -119,6 +119,13 @@ class SVGDefs(SVGRenderableElement):
         self.children.append(child)
 
 
+def flatten_list(l):
+    new_list = []
+    for x in l:
+        new_list.extend(x)
+    return new_list
+
+
 class SVGPath(SVGRenderableElement):
     """
     Represents a single SVG path. This is usually
@@ -197,14 +204,10 @@ class SVGPath(SVGRenderableElement):
         if g:
             g.apply_shader(self.transform)
 
-        glBegin(GL_TRIANGLES)
-        for vtx, clr in zip(tris, fills):
-            if not g:
-                glColor4ub(*clr)
-            else:
-                glColor4f(1, 1, 1, 1)
-            glVertex3f(vtx[0], vtx[1], 0)
-        glEnd()
+        graphics.draw_colored_triangles(
+            flatten_list(tris),
+            flatten_list(fills)
+        )
 
         if g:
             g.unapply_shader()
@@ -251,22 +254,23 @@ class SVGPath(SVGRenderableElement):
         pattern = None
         if fill in self.svg.patterns:
             pattern = self.svg.patterns[fill]
-            glEnable(GL_TEXTURE_2D)
             pattern.bind_texture()
 
         min_x, min_y, max_x, max_y = self.bounding_box()
 
-        glBegin(GL_TRIANGLES)
+        tex_coords = []
+
         for vtx in tris:
-            glColor4f(1, 1, 1, 1)
-            glTexCoord2f((vtx[0]-min_x)/(max_x-min_x)/pattern.width, (vtx[1]-min_y)/(max_y-min_y)/pattern.width)
-            glVertex3f(vtx[0], vtx[1], 0)
-        glEnd()
+            tex_coords.append((vtx[0]-min_x)/(max_x-min_x)/pattern.width)
+            tex_coords.append((vtx[1]-min_y)/(max_y-min_y)/pattern.width)
 
-        if not pattern:
+        graphics.draw_textured_triangles(
+            flatten_list(tris),
+            tex_coords
+        )
+
+        if pattern:
             pattern.unbind_texture()
-
-        glDisable(GL_TEXTURE_2D)
 
     def _render_stenciled(self):
         with self.transform:

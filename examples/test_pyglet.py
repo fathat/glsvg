@@ -19,6 +19,8 @@ class SVGWindow(pyglet.window.Window):
         self.statslabel = pyglet.text.Label("tris: N/A, lines: N/A", color=(0,0,0,255))
         self.statslabel.anchor_y = "top"
 
+        self.offset_x, self.offset_y = 400, 300
+
         self.instruction_label = pyglet.text.Label(
             "Scroll: WASD or Drag Mouse, Zoom: Mouse Wheel, Switch File: left/right arrow",
             color=(0,0,0,255))
@@ -47,7 +49,7 @@ class SVGWindow(pyglet.window.Window):
     def on_resize(self, width, height):
         # Override the default on_resize handler to create a 3D projection
         glViewport(0, 0, width, height)
-
+        self.offset_x, self.offset_y = 0, 0
 
     def reset_camera(self):
         self.zoom = 1
@@ -66,7 +68,7 @@ class SVGWindow(pyglet.window.Window):
         self.filename = os.path.join('../svgs', self.filelist[next])
         print 'Parsing', self.filename
         self.svg = glsvg.SVGDoc(self.filename)
-        self.svg.anchor_x, self.svg.anchor_y = self.svg.width/2, self.svg.height/2
+        self.svg.anchor_x, self.svg.anchor_y = 'center', 'center'
         self.statslabel.text = "tris: " + str(self.svg.n_tris) + ", lines: " + str(self.svg.n_lines)
 
     def on_key_press(self, symbol, modifiers):
@@ -79,21 +81,21 @@ class SVGWindow(pyglet.window.Window):
 
     def tick(self, dt):
         if self.keys[pyglet.window.key.W]:
-            self.draw_y += 80*dt
+            self.draw_y += 80 * dt
         if self.keys[pyglet.window.key.S]:
-            self.draw_y -= 80*dt
+            self.draw_y -= 80 * dt
         if self.keys[pyglet.window.key.D]:
-            self.draw_x -= 80*dt
+            self.draw_x -= 80 * dt
         if self.keys[pyglet.window.key.A]:
-            self.draw_x += 80*dt
+            self.draw_x += 80 * dt
         if self.keys[pyglet.window.key.UP]:
             self.zoom *= 1.1
         if self.keys[pyglet.window.key.DOWN]:
             self.zoom /= 1.1
         if self.keys[pyglet.window.key.Q]:
-            self.angle -= 120*dt
+            self.angle -= 120 * dt
         if self.keys[pyglet.window.key.E]:
-            self.angle += 120*dt
+            self.angle += 120 * dt
 
     def on_draw(self):
         glClearColor(1, 1, 1, 1)
@@ -109,7 +111,10 @@ class SVGWindow(pyglet.window.Window):
         glLoadIdentity()
         gluOrtho2D(0.0, self.width, self.height, 0)
         glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
         glDisable(GL_TEXTURE_2D)
+
+        glTranslatef(-self.offset_x, -self.offset_y, 0)
         self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
 
         #draw patterns
@@ -117,6 +122,8 @@ class SVGWindow(pyglet.window.Window):
         for pattern in self.svg.patterns.values():
             glEnable(GL_TEXTURE_2D)
             pattern.bind_texture()
+
+
             glColor4f(1,1,1,1)
             glBegin(GL_QUADS)
             glTexCoord2f(0, 0)
@@ -143,7 +150,7 @@ class SVGWindow(pyglet.window.Window):
 
         self.instruction_label.y = self.height
         self.instruction_label.draw()
-        self.statslabel.y = self.height-20
+        self.statslabel.y = self.height - 20
         self.statslabel.draw()
         self.fpslabel.draw()
 
@@ -152,7 +159,7 @@ class SVGWindow(pyglet.window.Window):
 
 def main():
     config = pyglet.gl.Config(sample_buffers=1, samples=4, stencil_size=8, double_buffer=True)
-    w = SVGWindow(config=config, resizable=True)
+    w = SVGWindow(width=800, height=600, config=config, resizable=True)
     pyglet.app.run()
 
 if __name__ == '__main__':

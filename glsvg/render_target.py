@@ -1,5 +1,5 @@
 __author__ = 'Ian'
-from OpenGL.GL import *
+import OpenGL.GL as gl
 
 
 class Texture2D:
@@ -8,29 +8,29 @@ class Texture2D:
 
         self.width = w
         self.height = h
-        self.id = glGenTextures(1)
+        self.id = gl.glGenTextures(1)
         print "texture id", self.id
 
         self.bind()
-        glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
 
-        glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        gl.glTexParameterf(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        gl.glTexParameterf(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
-        wrap_mode = GL_REPEAT if wrap else GL_CLAMP
-        glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode)
-        glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode)
+        wrap_mode = gl.GL_REPEAT if wrap else gl.GL_CLAMP
+        gl.glTexParameterf(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, wrap_mode)
+        gl.glTexParameterf(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, wrap_mode)
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, self.width, self.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA8, self.width, self.height, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
 
-        print "Tex OK? ", glGetError() == GL_NO_ERROR
+        print "Tex OK? ", gl.glGetError() == gl.GL_NO_ERROR
         self.unbind()
 
     def bind(self):
-        glBindTexture(GL_TEXTURE_2D, self.id)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.id)
 
     def unbind(self):
-        glBindTexture(GL_TEXTURE_2D, 0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
     def __enter__(self):
         self.bind()
@@ -43,33 +43,33 @@ class Texture2D:
 
 class RenderBufferObject:
     def __init__(self, w, h):
-        self.id = glGenRenderbuffers(1);
+        self.id = gl.glGenRenderbuffers(1);
         self.width, self.height = w, h
 
         self.bind()
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h)
+        gl.glRenderbufferStorage(gl.GL_RENDERBUFFER, gl.GL_DEPTH24_STENCIL8, w, h)
         self.unbind()
 
     def bind(self):
-        glBindRenderbuffer(GL_RENDERBUFFER, self.id)
+        gl.glBindRenderbuffer(gl.GL_RENDERBUFFER, self.id)
 
     def unbind(self):
-        glBindRenderbuffer(GL_RENDERBUFFER, 0)
+        gl.glBindRenderbuffer(gl.GL_RENDERBUFFER, 0)
 
 
 class RenderTarget:
     def __init__(self, w, h, depth_and_stencil=True):
         self.texture = Texture2D(w, h)
-        self.id = glGenFramebuffers(1)
+        self.id = gl.glGenFramebuffers(1)
         self.bind()
         self.depth_stencil = None
         if depth_and_stencil:
             self.depth_stencil = RenderBufferObject(w, h)
 
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER,
-            GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D,
+        gl.glFramebufferTexture2D(
+            gl.GL_FRAMEBUFFER,
+            gl.GL_COLOR_ATTACHMENT0,
+            gl.GL_TEXTURE_2D,
             self.texture.id,
             0)
 
@@ -78,8 +78,8 @@ class RenderTarget:
         self.unbind()
 
     def check_status(self):
-        status = glCheckFramebufferStatus(GL_FRAMEBUFFER)
-        if status == GL_FRAMEBUFFER_COMPLETE:
+        status = gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER)
+        if status == gl.GL_FRAMEBUFFER_COMPLETE:
             print "Framebuffer complete"
             return True
         else:
@@ -87,10 +87,10 @@ class RenderTarget:
             return False
 
     def bind(self):
-        glBindFramebuffer(GL_FRAMEBUFFER, self.id)
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.id)
 
     def unbind(self):
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
 
     def __enter__(self):
         self.bind()

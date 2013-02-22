@@ -1,5 +1,5 @@
 from svg_parser_utils import *
-from OpenGL.GL import *
+import OpenGL.GL as gl
 import math
 
 EPSILON = 0.001
@@ -14,6 +14,9 @@ class vec2(object):
             self.x, self.y = args[0]
         else:
             self.x, self.y = args[0], args[1]
+
+    def tolist(self):
+        return [self.x, self.y]
 
     def __repr__(self):
         return '(' + str(self.x) + ',' + str(self.y) + ')'
@@ -120,12 +123,12 @@ class Matrix(object):
             self.values = list(string)
 
     def __enter__(self):
-        glPushMatrix()
-        glMultMatrixf(self.to_mat4())
+        gl.glPushMatrix()
+        gl.glMultMatrixf(self.to_mat4())
         return self
 
     def __exit__(self, type, value, traceback):
-        glPopMatrix()
+        gl.glPopMatrix()
 
     def __call__(self, other):
         return (self.values[0] * other[0] + self.values[2] * other[1] + self.values[4],

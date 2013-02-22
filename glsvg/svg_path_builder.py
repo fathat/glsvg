@@ -2,8 +2,8 @@ import math
 import re
 import string
 
-from OpenGL.GL import *
-from OpenGL.GLU import *
+import OpenGL.GL as gl
+import OpenGL.GLU as glu
 from svg_constants import *
 from svg_parser_utils import *
 from vector_math import Matrix
@@ -315,33 +315,33 @@ class SVGPathBuilder(object):
         t_list = []
         self.ctx_curr_shape = []
         spare_verts = []
-        tess = gluNewTess()
-        gluTessNormal(tess, 0, 0, 1)
-        gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
+        tess = glu.gluNewTess()
+        glu.gluTessNormal(tess, 0, 0, 1)
+        glu.gluTessProperty(tess, glu.GLU_TESS_WINDING_RULE, glu.GLU_TESS_WINDING_NONZERO)
 
         def set_tess_callback(which):
             def set_call(func):
-                gluTessCallback(tess, which, func)
+                glu.gluTessCallback(tess, which, func)
             return set_call
 
-        @set_tess_callback(GLU_TESS_VERTEX)
+        @set_tess_callback(glu.GLU_TESS_VERTEX)
         def vertex_callback(vertex):
             self.ctx_curr_shape.append(list(vertex[0:2]))
 
-        @set_tess_callback(GLU_TESS_BEGIN)
+        @set_tess_callback(glu.GLU_TESS_BEGIN)
         def begin_callback(which):
             self.ctx_tess_style = which
 
-        @set_tess_callback(GLU_TESS_END)
+        @set_tess_callback(glu.GLU_TESS_END)
         def end_callback():
-            if self.ctx_tess_style == GL_TRIANGLE_FAN:
+            if self.ctx_tess_style == gl.GL_TRIANGLE_FAN:
                 c = self.ctx_curr_shape.pop(0)
                 p1 = self.ctx_curr_shape.pop(0)
                 while self.ctx_curr_shape:
                     p2 = self.ctx_curr_shape.pop(0)
                     t_list.extend([c, p1, p2])
                     p1 = p2
-            elif self.ctx_tess_style == GL_TRIANGLE_STRIP:
+            elif self.ctx_tess_style == gl.GL_TRIANGLE_STRIP:
                 p1 = self.ctx_curr_shape.pop(0)
                 p2 = self.ctx_curr_shape.pop(0)
                 while self.ctx_curr_shape:
@@ -349,16 +349,16 @@ class SVGPathBuilder(object):
                     t_list.extend([p1, p2, p3])
                     p1 = p2
                     p2 = p3
-            elif self.ctx_tess_style == GL_TRIANGLES:
+            elif self.ctx_tess_style == gl.GL_TRIANGLES:
                 t_list.extend(self.ctx_curr_shape)
             else:
                 self._warn("Unrecognised tesselation style: %d" % (self.ctx_tess_style,))
             self.ctx_tess_style = None
             self.ctx_curr_shape = []
 
-        @set_tess_callback(GLU_TESS_ERROR)
+        @set_tess_callback(glu.GLU_TESS_ERROR)
         def error_callback(code):
-            ptr = gluErrorString(code)
+            ptr = glu.gluErrorString(code)
             err = ''
             idx = 0
             while ptr[idx]:
@@ -366,7 +366,7 @@ class SVGPathBuilder(object):
                 idx += 1
             self._warn("GLU Tesselation Error: " + err)
 
-        @set_tess_callback(GLU_TESS_COMBINE)
+        @set_tess_callback(glu.GLU_TESS_COMBINE)
         def combine_callback(coords, vertex_data, weights):
             x, y, z = coords[0:3]
             dataOut = (x,y,z)
@@ -382,17 +382,17 @@ class SVGPathBuilder(object):
             data_lists.append(d_list)
 
         if fill_rule == 'nonzero':
-            gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_NONZERO)
+            glu.gluTessProperty(tess, glu.GLU_TESS_WINDING_RULE, glu.GLU_TESS_WINDING_NONZERO)
         elif fill_rule == 'evenodd':
-            gluTessProperty(tess, GLU_TESS_WINDING_RULE, GLU_TESS_WINDING_ODD)
+            glu.gluTessProperty(tess, glu.GLU_TESS_WINDING_RULE, glu.GLU_TESS_WINDING_ODD)
 
-        gluTessBeginPolygon(tess, None)
+        glu.gluTessBeginPolygon(tess, None)
         for d_list in data_lists:
-            gluTessBeginContour(tess)
+            glu.gluTessBeginContour(tess)
             for v_data in d_list:
-                gluTessVertex(tess, v_data, v_data)
-            gluTessEndContour(tess)
-        gluTessEndPolygon(tess)
+                glu.gluTessVertex(tess, v_data, v_data)
+            glu.gluTessEndContour(tess)
+        glu.gluTessEndPolygon(tess)
         return t_list
 
     def _warn(self, message):

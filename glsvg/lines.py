@@ -1,6 +1,7 @@
-from OpenGL.GL import *
 import math
+import graphics
 from vector_math import vec2, line_length, radian, intersection
+
 
 class LineSegment(object):
     def __init__(self, startp, endp, w=0):
@@ -141,39 +142,32 @@ def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=Fa
         closed = True
 
     lines = calc_polyline(points, w, miter_limit, closed)
+    swap = False
+    vertices = []
+    color_list = []
 
-    #draw points for start of line and end of line
-    if debug:
-        glPointSize(6)
-        glBegin(GL_POINTS)
-        if closed:
-            glColor4f(1, 0, 1, 1)
-        else:
-            glColor4f(1, 0, 0, 1)
-        glVertex2f(lines[0].upper_v[0].x, lines[0].upper_v[0].y)
-        glVertex2f(lines[0].lower_v[0].x, lines[0].lower_v[0].y)
-        glEnd()
+    for line, color in zip(lines, colors):
+        first = line.upper_v if not swap else line.lower_v
+        second = line.lower_v if not swap else line.upper_v
 
-        glPointSize(6)
+        vertices.extend(first[0].tolist())
+        color_list.extend(color)
+        vertices.extend(second[0].tolist())
+        color_list.extend(color)
+        vertices.extend(first[1].tolist())
+        color_list.extend(color)
+        vertices.extend(second[1].tolist())
+        color_list.extend(color)
 
-    if colors:
-        for line in lines:
-            glBegin(GL_TRIANGLE_FAN)
-            for v, c in zip(line.upper_v, colors):
-                glColor4ub(*c)
-                if debug: glColor4f(1, 0, 0, 1)
-                glVertex2f(v.x, v.y)
-            for v, c in reversed(zip(line.lower_v, colors)):
-                glColor4ub(*c)
-                if debug: glColor4f(0, 1, 0, 1)
-                glVertex2f(v.x, v.y)
-            glEnd()
-    else:
-        for line in lines:
-            glBegin(GL_LINE_STRIP)
-            for v in line.upper_v: glVertex2f(v.x, v.y)
-            for v in reversed(line.lower_v): glVertex2f(v.x, v.y)
-            glEnd()
+        if len(first) > len(second):
+            vertices.extend(first[-1].tolist())
+            swap = not swap
+        elif len(second) > len(first):
+            vertices.extend(second[-1].tolist())
+            swap = not swap
+
+    graphics.draw_triangle_strip(vertices, color_list)
+
 
 
 def ln_intersection(l1, l2):

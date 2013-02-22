@@ -1,5 +1,4 @@
-from OpenGL.GL import *
-from OpenGL.GL.ARB import *
+import OpenGL.GL as gl
 
 active_shader = None
 
@@ -8,7 +7,7 @@ class Shader(object):
 
     """An OpenGL shader object"""
     def __init__(self, shader_type, src=None, name="(unnamed shader)"):
-        self.shader_object = glCreateShader(shader_type)
+        self.shader_object = gl.glCreateShader(shader_type)
         self.name = name
         self.program = None
 
@@ -20,14 +19,14 @@ class Shader(object):
         if self.program:
             self.program.detach(self)
             self.program = None
-        glDeleteShader(self.shader_object)
+        gl.glDeleteShader(self.shader_object)
     
     def source(self, source_string):
-        glShaderSource(self.shader_object, source_string)
+        gl.glShaderSource(self.shader_object, source_string)
     
     def compile(self):
-        glCompileShader(self.shader_object)
-        return_val = glGetShaderiv(self.shader_object, GL_COMPILE_STATUS)
+        gl.glCompileShader(self.shader_object)
+        return_val = gl.glGetShaderiv(self.shader_object, gl.GL_COMPILE_STATUS)
 
         if return_val:
             print "%s compiled successfuly." % (self.name)
@@ -36,7 +35,7 @@ class Shader(object):
             self.print_info_log()
 
     def info_log(self):
-        glGetProgramInfoLog(self.shader_object)
+        gl.glGetProgramInfoLog(self.shader_object)
 
     def print_info_log(self):
         print self.info_log()
@@ -55,7 +54,7 @@ class UniformVar(object):
 class Program(object):
     """An OpenGL shader program"""
     def __init__(self, shaders=None):
-        self.program_object = glCreateProgram()
+        self.program_object = gl.glCreateProgram()
         self.shaders = []
         self.uniform_vars = {}
 
@@ -67,41 +66,41 @@ class Program(object):
             self.stop()
     
     def __del__(self):
-        glDeleteProgram( self.program_object)
+        gl.glDeleteProgram(self.program_object)
     
     def attach(self, shader):
         self.shaders.append(shader)
         shader.program = self
-        glAttachShader(self.program_object, shader.shader_object)
+        gl.glAttachShader(self.program_object, shader.shader_object)
     
     def detach(self, shader):
         self.shaders.remove(shader)
-        glDetachShader(self.program_object, shader.shader_object)
+        gl.glDetachShader(self.program_object, shader.shader_object)
         print "Shader detached"
     
     def link(self):
-        glLinkProgram(self.program_object)
+        gl.glLinkProgram(self.program_object)
     
     def use(self):
         global active_shader
         active_shader = self
-        glUseProgram( self.program_object )
+        gl.glUseProgram( self.program_object )
         self.set_vars()
 
     def stop(self):
         global active_shader
-        glUseProgram( 0 )
+        gl.glUseProgram( 0 )
         active_shader = None
 
     def uniformi( self, name, *args ):
-        argf = {1: glUniform1i,
-                2: glUniform2i,
-                3: glUniform3i,
-                4: glUniform4i}
+        argf = {1: gl.glUniform1i,
+                2: gl.glUniform2i,
+                3: gl.glUniform3i,
+                4: gl.glUniform4i}
         f = argf[len(args)]
 
         def _set_uniform(name, *args):
-            location = glGetUniformLocation(self.program_object, name)
+            location = gl.glGetUniformLocation(self.program_object, name)
             f(location, *args)
 
         self.uniform_vars[name] = UniformVar(_set_uniform, name, *args)
@@ -109,14 +108,14 @@ class Program(object):
             self.uniform_vars[name].set()
     
     def uniformf(self, name, *args):
-        argf = {1: glUniform1f,
-                2: glUniform2f,
-                3: glUniform3f,
-                4: glUniform4f}
+        argf = {1: gl.glUniform1f,
+                2: gl.glUniform2f,
+                3: gl.glUniform3f,
+                4: gl.glUniform4f}
         f = argf[len(args)]
 
         def _set_uniform(name, *args):
-            location = glGetUniformLocation(self.program_object, name)
+            location = gl.glGetUniformLocation(self.program_object, name)
             f(location, *args)
 
         self.uniform_vars[name] = UniformVar(_set_uniform, name, *args)
@@ -124,13 +123,13 @@ class Program(object):
             self.uniform_vars[name].set()
     
     def uniform_matrixf(self, name, transpose, values):
-        argf = {4: glUniformMatrix2fv,
-                9: glUniformMatrix3fv,
-                16: glUniformMatrix4fv}
+        argf = {4: gl.glUniformMatrix2fv,
+                9: gl.glUniformMatrix3fv,
+                16: gl.glUniformMatrix4fv}
         f = argf[len(values)]
 
         def _set_uniform(name, values):
-            location = glGetUniformLocation(self.program_object, name)
+            location = gl.glGetUniformLocation(self.program_object, name)
             f(location, 1, transpose, values)
 
         self.uniform_vars[name] = UniformVar(_set_uniform, name, values)
@@ -142,15 +141,15 @@ class Program(object):
             var.set()
     
     def print_info_log(self):
-        print glGetInfoLog(self.program_object)
+        print gl.glGetInfoLog(self.program_object)
 
 
 def make_ps_from_src(name, src):
-    return make_shader_from_src(name, src, GL_FRAGMENT_SHADER)
+    return make_shader_from_src(name, src, gl.GL_FRAGMENT_SHADER)
 
 
 def make_vs_from_src(name, src):
-    return make_shader_from_src(name, src, GL_VERTEX_SHADER)
+    return make_shader_from_src(name, src, gl.GL_VERTEX_SHADER)
 
 
 def make_shader_from_src(name, src, shader_type):
@@ -174,5 +173,5 @@ def make_program_from_src(vs_name, ps_name, vertex_shader_src, pixel_shader_src)
 
 def disable_shaders():
     global active_shader
-    glUseProgram(0)
+    gl.glUseProgram(0)
     active_shader = None
