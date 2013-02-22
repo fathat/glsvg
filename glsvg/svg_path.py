@@ -66,6 +66,16 @@ class SVGRenderableElement(object):
         self.children.append(child)
 
     @property
+    def is_pattern_part(self):
+        part = self
+        while part:
+            if part.is_pattern:
+                return True
+            part = part.parent
+        return False
+
+
+    @property
     def absolute_transform(self):
         """Return this transform, multiplied by chain of parents"""
         if self.parent:
@@ -138,7 +148,11 @@ class SVGPath(SVGRenderableElement):
         SVGRenderableElement.__init__(self, svg, element, parent)
         #: The original SVG file
         self.svg = svg
-        self.config = svg.config
+
+        if not self.is_pattern_part:
+            self.config = svg.config
+        else:
+            self.config = svg.config.super_detailed()
 
         #: The actual path elements, as a list of vertices
         self.outline = None
@@ -152,7 +166,7 @@ class SVGPath(SVGRenderableElement):
         path_builder = SVGPathBuilder(
                         self,
                         element,
-                        svg.config)
+                        self.config)
 
         self.outline = path_builder.path
 

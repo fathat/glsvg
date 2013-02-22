@@ -34,7 +34,9 @@ class App:
 
     def on_init(self):
         pygame.init()
-        self._display_surf = pygame.display.set_mode(self.size, pygame.HWSURFACE|pygame.OPENGL|pygame.DOUBLEBUF)
+        self._display_surf = pygame.display.set_mode(
+                                self.size,
+                                pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF)
         self._running = True
         self.filelist = [f for f in os.listdir('../svgs')
                              if f.endswith('svg') or f.endswith('svgz')]

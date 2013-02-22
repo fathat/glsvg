@@ -321,7 +321,7 @@ class SVGDoc(object):
         elif e.tag.endswith('radialGradient'):
             self._gradients[e.get('id')] = RadialGradient(e, self)
         elif e.tag.endswith('pattern'):
-            renderable =  SVGPattern(self, e, parent)
+            renderable = SVGPattern(self, e, parent)
             self.patterns[e.get('id')] = renderable
         elif e.tag.endswith('defs'):
             renderable = SVGDefs(self, e, parent)
