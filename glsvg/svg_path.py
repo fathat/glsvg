@@ -207,7 +207,7 @@ class SVGPath(SVGRenderableElement):
     def _render_gradient_fill(self):
         fill = self.style.fill
         tris = self.triangles
-        self.svg.n_tris += len(tris)/3
+        self.svg.n_tris += len(tris) / 3
         g = None
         if isinstance(fill, str):
             g = self.svg._gradients[fill]

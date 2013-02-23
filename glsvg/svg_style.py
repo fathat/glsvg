@@ -40,8 +40,8 @@ class SVGStyle(object):
         self.stroke_width = float(element.get('stroke-width', 1.0))
 
         self.opacity *= float(element.get('opacity', 1))
-        fill_opacity = float(element.get('fill-opacity', 1))
-        stroke_opacity = float(element.get('stroke-opacity', 1))
+        self.fill_opacity = float(element.get('fill-opacity', 1))
+        self.stroke_opacity = float(element.get('stroke-opacity', 1))
 
         style = element.get('style')
         if style:
@@ -49,23 +49,23 @@ class SVGStyle(object):
             if 'fill' in style_dict:
                 self.fill = parse_color(style_dict['fill'])
             if 'fill-opacity' in style_dict:
-                fill_opacity *= float(style_dict['fill-opacity'])
+                self.fill_opacity *= float(style_dict['fill-opacity'])
             if 'stroke' in style_dict:
                 self.stroke = parse_color(style_dict['stroke'])
             if 'stroke-opacity' in style_dict:
-                stroke_opacity *= float(style_dict['stroke-opacity'])
+                self.stroke_opacity *= float(style_dict['stroke-opacity'])
             if 'stroke-width' in style_dict:
                 sw = style_dict['stroke-width']
                 self.stroke_width = parse_float(sw)
             if 'opacity' in style_dict:
-                fill_opacity *= float(style_dict['opacity'])
-                stroke_opacity *= float(style_dict['opacity'])
+                self.fill_opacity *= float(style_dict['opacity'])
+                self.stroke_opacity *= float(style_dict['opacity'])
             if 'fill-rule' in style_dict:
                 self.fill_rule = style_dict['fill-rule']
         if isinstance(self.stroke, list):
-            self.stroke[3] = int(self.opacity * stroke_opacity * self.stroke[3])
+            self.stroke[3] = int(self.opacity * self.stroke_opacity * self.stroke[3])
         if isinstance(self.fill, list):
-            self.fill[3] = int(self.opacity * fill_opacity * self.fill[3])
+            self.fill[3] = int(self.opacity * self.fill_opacity * self.fill[3])
 
     def parse_style_attribute(self, attr):
         pass
