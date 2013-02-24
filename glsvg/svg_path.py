@@ -163,6 +163,8 @@ class SVGPath(SVGRenderableElement):
         #: The base shape. Possible values: path, rect, circle, ellipse, line, polygon, polyline
         self.shape = None
 
+        self.bb = None
+
         path_builder = SVGPathBuilder(
                         self,
                         element,
@@ -189,7 +191,7 @@ class SVGPath(SVGRenderableElement):
                 loop_plus += [loop[i], loop[i+1]]
             if isinstance(stroke, str):
                 g = self.svg._gradients[stroke]
-                strokes = [g.sample(x) for x in loop_plus]
+                strokes = [g.sample(x, self) for x in loop_plus]
             else:
                 strokes = [stroke for x in loop_plus]
             lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
@@ -211,12 +213,12 @@ class SVGPath(SVGRenderableElement):
         g = None
         if isinstance(fill, str):
             g = self.svg._gradients[fill]
-            fills = [g.sample(x) for x in tris]
+            fills = [g.sample(x, self) for x in tris]
         else:
             fills = [fill] * len(tris)  # for x in tris]
 
         if g:
-            g.apply_shader(self.transform)
+            g.apply_shader(self, self.transform, self.style.opacity * self.style.fill_opacity)
 
         graphics.draw_colored_triangles(
             flatten_list(tris),
@@ -232,25 +234,15 @@ class SVGPath(SVGRenderableElement):
 
         (min_x, min_y, max_x, max_y)
         '''
-        min_x = None
-        max_x = None
-        min_y = None
-        max_y = None
+        if not self.bb:
 
-        if self.triangles:
-            for vtx in self.triangles:
-                x, y = vtx
-                if min_x is None or x < min_x:
-                    min_x = x
-                if min_y is None or y < min_y:
-                    min_y = y
-                if max_x is None or x > max_x:
-                    max_x = x
-                if max_y is None or y > max_y:
-                    max_y = y
-        if self.outline:
-            for p in self.outline:
-                for vtx in p:
+            min_x = None
+            max_x = None
+            min_y = None
+            max_y = None
+
+            if self.triangles:
+                for vtx in self.triangles:
                     x, y = vtx
                     if min_x is None or x < min_x:
                         min_x = x
@@ -260,7 +252,20 @@ class SVGPath(SVGRenderableElement):
                         max_x = x
                     if max_y is None or y > max_y:
                         max_y = y
-        return (min_x, min_y, max_x, max_y)
+            if self.outline:
+                for p in self.outline:
+                    for vtx in p:
+                        x, y = vtx
+                        if min_x is None or x < min_x:
+                            min_x = x
+                        if min_y is None or y < min_y:
+                            min_y = y
+                        if max_x is None or x > max_x:
+                            max_x = x
+                        if max_y is None or y > max_y:
+                            max_y = y
+            self.bb = (min_x, min_y, max_x, max_y)
+        return self.bb
 
     def _render_pattern_fill(self):
         fill = self.style.fill

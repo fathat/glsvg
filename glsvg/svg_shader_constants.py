@@ -24,6 +24,8 @@ uniform vec4 stop2;
 uniform vec4 stop3;
 uniform vec4 stop4;
 
+uniform float opacity;
+
 uniform mat3 worldTransform;
 uniform mat3 gradientTransform;
 uniform mat3 invGradientTransform;
@@ -63,6 +65,8 @@ void main()
         result.rgba = stop4;
     }
 
+    result.a = result.a * opacity;
+
     gl_FragColor = result;
 }"""
 
@@ -70,6 +74,8 @@ linear = """
 
 uniform vec2 start;
 uniform vec2 end;
+
+uniform float opacity;
 
 uniform float canvasHeight;
 uniform vec4 stops;
@@ -120,7 +126,8 @@ void main()
     {
         result.rgba = stop4;
     }
-    
+
+    result.a = result.a * opacity;
     gl_FragColor = result;
 }
 """

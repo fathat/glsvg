@@ -78,6 +78,7 @@ class Gradient(object):
         self.svg = svg
         self.grad_transform = Matrix(element.get('gradientTransform'))
         self.inv_transform = Matrix(element.get('gradientTransform')).inverse()
+        self.opacity = element.get('opacity', 1.0)
 
         inherit = self.element.get('{http://www.w3.org/1999/xlink}href')
         parent = None
@@ -92,9 +93,9 @@ class Gradient(object):
         if not delay_params:
             self.get_params(parent)
 
-    def sample(self, pt):
+    def sample(self, pt, path):
         if not self.stops: return [255, 0, 255, 255]
-        t = self.grad_value(self.inv_transform(pt))
+        t = self.grad_value(self.inv_transform(pt), path)
         if t < self.stops[0][0]:
             return self.stops[0][1]
         for n, top in enumerate(self.stops[1:]):
@@ -113,14 +114,14 @@ class Gradient(object):
                 v = getattr(parent, param, None)
             my_v = self.element.get(param)
             if my_v:
-                v = float(my_v)
+                v = str(my_v)
             if v:
                 setattr(self, param, v)
 
     def tardy_gradient_parsed(self, gradient):
         self.get_params(gradient)
         
-    def apply_shader(self, transform):
+    def apply_shader(self, path, transform, opacity):
         pass
     
     def unapply_shader(self):
@@ -131,21 +132,54 @@ class LinearGradient(Gradient):
     params = ['x1', 'x2', 'y1', 'y2', 'stops']
 
     def __init__(self, *args):
-        self.x1 = 0
-        self.x2 = 0
-        self.y1 = 0
-        self.y2 = 1
+        self.x1 = '0'
+        self.x2 = "100%"
+        self.y1 = '0'
+        self.y2 = '0'
         Gradient.__init__(self, *args)
 
-    def grad_value(self, pt):
-        return ((pt[0] - self.x1) * (self.x2 - self.x1) + (pt[1] - self.y1) * (self.y2 - self.y1)) \
-            / ((self.x1 - self.x2) ** 2 + (self.y1 - self.y2) ** 2)
-    
-    def apply_shader(self, transform):
+    def grad_value(self, pt, path):
+        return ((pt[0] - self.get_x1(path)) * (self.get_x2(path) - self.get_x1(path)) + (pt[1] - self.get_y1(path)) * (self.get_y2(path) - self.get_y1(path))) \
+            / ((self.get_x1(path) - self.get_x2(path)) ** 2 + (self.get_y1(path) - self.get_y2(path)) ** 2)
+
+    def get_x1(self, path):
+        if self.x1.endswith("%"):
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.x1)
+            return percentage * (maxx - minx) + minx
+        else:
+            return float(self.x1)
+
+    def get_x2(self, path):
+        if self.x2.endswith("%"):
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.x2)
+            return percentage * (maxx - minx) + minx
+        else:
+            return float(self.x2)
+
+    def get_y1(self, path):
+        if self.y1.endswith("%"):
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.y1)
+            return percentage * (maxy - miny) + miny
+        else:
+            return float(self.y1)
+
+    def get_y2(self, path):
+        if self.y2.endswith("%"):
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.y2)
+            return percentage * (maxy - miny) + miny
+        else:
+            return float(self.y2)
+
+    def apply_shader(self, path, transform, opacity):
         if not self.stops: return
         gradient_shaders.linear_shader.use()
-        gradient_shaders.linear_shader.uniformf("start", self.x1, self.y1)
-        gradient_shaders.linear_shader.uniformf("end", self.x2, self.y2)
+        gradient_shaders.linear_shader.uniformf("opacity", self.opacity * opacity)
+        gradient_shaders.linear_shader.uniformf("start", self.get_x1(path), self.get_y1(path))
+        gradient_shaders.linear_shader.uniformf("end", self.get_x2(path), self.get_y2(path))
         gradient_shaders.linear_shader.uniform_matrixf("worldTransform", False, svg_matrix_to_gl_matrix(transform))
         gradient_shaders.linear_shader.uniform_matrixf("gradientTransform",
                                      False,
@@ -156,17 +190,16 @@ class LinearGradient(Gradient):
             stop_points.append(stop_point)
         while len(stop_points) < 5:
             stop_points.append(0.0)
-        
-        #can't support more than 5 of these bad boys..
+
         if len(stop_points) > 5:
             stop_points = stop_points[:5]
 
         gradient_shaders.linear_shader.uniformf("stops", *(stop_points[1:]))
         
         def get_stop(i):
-            return self.stops[i] if i < len(self.stops) else (1.0, [0.0, 0.0, 0.0, 0.0])
+            return self.stops[i] if i < len(self.stops) else self.stops[-1]
         
-        for i in xrange(len(stop_points)):
+        for i in xrange(5):
             stop_point, color = get_stop(i)
             color = tuple(float(x)/255.0 for x in color)
             gradient_shaders.linear_shader.uniformf("stop" + str(i), *color)
@@ -179,14 +212,40 @@ class LinearGradient(Gradient):
 class RadialGradient(Gradient):
     params = ['cx', 'cy', 'r', 'stops']
 
-    def grad_value(self, pt):
-        return math.sqrt((pt[0] - self.cx) ** 2 + (pt[1] - self.cy) ** 2)/self.r
-        
-    def apply_shader(self, transform):
+    def grad_value(self, pt, path):
+        return math.sqrt((pt[0] - self.get_cx(path)) ** 2 + (pt[1] - self.get_cy(path)) ** 2) / self.get_r(path)
+
+    def get_cx(self, path):
+        if self.cx.endswith("%"):
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.cx)
+            return percentage * (maxx - minx) + minx
+        else:
+            return float(self.cx)
+
+    def get_cy(self, path):
+        if self.cy.endswith("%"):
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.cy)
+            return percentage * (maxy - miny) + miny
+        else:
+            return float(self.cy)
+
+    def get_r(self, path):
+        if self.r.endswith("%"):
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.r)
+            extent = min(maxx-minx, maxy-miny)
+            return percentage * extent
+        else:
+            return float(self.r)
+
+    def apply_shader(self, path, transform, opacity):
         if not self.stops: return
         gradient_shaders.radial_shader.use()
-        gradient_shaders.radial_shader.uniformf("radius", self.r)
-        gradient_shaders.radial_shader.uniformf("center", self.cx, self.cy)
+        gradient_shaders.radial_shader.uniformf("opacity", self.opacity*opacity)
+        gradient_shaders.radial_shader.uniformf("radius", self.get_r(path))
+        gradient_shaders.radial_shader.uniformf("center", self.get_cx(path), self.get_cy(path))
         gradient_shaders.radial_shader.uniform_matrixf("worldTransform", False, svg_matrix_to_gl_matrix(transform))
         gradient_shaders.radial_shader.uniform_matrixf("gradientTransform",
                                      False,
