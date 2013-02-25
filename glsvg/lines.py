@@ -66,9 +66,46 @@ def _process_joint(ln, pln, miter_limit):
         pln.lower_v.append(ln.lower_join)
 
 
+class DashGenerator:
+
+    def __init__(self, pattern):
+        self.pattern = pattern
+        self.index = 0
+        self.remainder = 0
+
+        if len(pattern) % 2 == 1:
+            self.pattern *= 2
+
+    def next(self, accept_limit):
+        n = self.pattern[self.index]
+
+        self.index = (self.index + 1) % len(self.pattern)
+        return n
+
+
+def split_line_by_pattern(start, end, pattern):
+    start = vec2(start)
+    end = vec2(end)
+    normal = (end - start).normalized()
+    remaining = (end - start).length()
+
+    dg = DashGenerator(pattern)
+    lines = []
+    current = start
+    is_whitespace = False
+    while remaining > 0:
+        l = dg.next(remaining)
+        a = current
+        b = current + normal * min(remaining, l)
+        current = b
+        if not is_whitespace:
+            lines.append((a, b))
+        is_whitespace = not is_whitespace
+        remaining -= l
+    return lines
+
+
 def calc_polyline(points, w, miter_limit=4, closed=False):
-
-
     points = [vec2(p) for p in points]
     if closed and points[0] != points[-1]:
         points.append(vec2(points[0]))

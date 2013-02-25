@@ -194,7 +194,18 @@ class SVGPath(SVGRenderableElement):
                 strokes = [g.sample(x, self) for x in loop_plus]
             else:
                 strokes = [stroke for x in loop_plus]
-            lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
+
+            if len(self.style.stroke_dasharray):
+
+                for i in xrange(len(loop_plus)-1):
+                    ls = lines.split_line_by_pattern(
+                        loop_plus[i],
+                        loop_plus[i+1],
+                        self.style.stroke_dasharray)
+                    for l in ls:
+                        lines.draw_polyline(l, stroke_width, colors=strokes)
+            else:
+                lines.draw_polyline(loop_plus, stroke_width, colors=strokes)
 
     def _render_stroke_stencil(self):
         if not self.outline:

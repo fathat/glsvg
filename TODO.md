@@ -23,6 +23,7 @@ TODO:
  - [ ] Draw lines as triangle strip (instead of triangle fan)
  - [ ] Clipping paths
  - [ ] Masking
+ - [ ] Radial gradient focal points
 
 MAYBE:
  - [ ] Text tag. Would need some sort of good font library to do this.

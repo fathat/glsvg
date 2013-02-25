@@ -43,6 +43,10 @@ class SVGStyle(object):
         self.fill_opacity = float(element.get('fill-opacity', 1))
         self.stroke_opacity = float(element.get('stroke-opacity', 1))
 
+        dash_array = element.get('stroke-dasharray', None)
+        if dash_array:
+            self.stroke_dasharray = [float(x.strip()) for x in dash_array.split(',')]
+
         style = element.get('style')
         if style:
             style_dict = parse_style(style)
@@ -57,6 +61,10 @@ class SVGStyle(object):
             if 'stroke-width' in style_dict:
                 sw = style_dict['stroke-width']
                 self.stroke_width = parse_float(sw)
+            if 'stroke-dasharray' in style_dict:
+                dash_array = style_dict['stroke-dasharray']
+                if dash_array:
+                    self.stroke_dasharray = [float(x.strip()) for x in dash_array.split(',')]
             if 'opacity' in style_dict:
                 self.fill_opacity *= float(style_dict['opacity'])
                 self.stroke_opacity *= float(style_dict['opacity'])

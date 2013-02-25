@@ -169,3 +169,12 @@ class Matrix(object):
 def svg_matrix_to_gl_matrix(matrix):
     v = matrix.values
     return [v[0], v[1], 0.0, v[2], v[3], 0.0, v[4], v[5], 1.0]
+
+
+class BoundingBox:
+
+    def __init__(self, point_cloud):
+        pass
+
+    def expand(self, points):
+        pass

@@ -1,22 +1,13 @@
 <?xml version="1.0" standalone="no"?>
-      <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" version="1.1">
-        <defs>
-          <linearGradient id="Gradient1">
-            <stop offset="5%" stop-color="white"/>
-            <stop offset="95%" stop-color="blue"/>
-          </linearGradient>
-          <linearGradient id="Gradient2" x1="0" x2="0" y1="0" y2="100%">
-            <stop offset="5%" stop-color="red"/>
-            <stop offset="95%" stop-color="orange"/>
-          </linearGradient>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
+"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 
-           <pattern id="Pattern" width=".25" height=".25" patternContentUnits="objectBoundingBox">
-             <rect x="0" y="0" width=".25" height=".25" fill="skyblue"/>
-             <rect x="0" y="0" width=".125" height=".125" fill="url(#Gradient2)"/>
-             <circle cx=".125" cy=".125" r=".1" fill="url(#Gradient1)" fill-opacity="0.5"/>
-           </pattern>
-
-        </defs>
-
-        <rect fill="url(#Pattern)" stroke="black" x="0" y="0" width="200" height="200"/>
-      </svg>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <defs>
+    <radialGradient id="grad1" cx="20%" cy="30%" r="30%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:rgb(255,255,255);stop-opacity:0" />
+      <stop offset="100%" style="stop-color:rgb(0,0,255);stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  <ellipse cx="200" cy="70" rx="85" ry="55" fill="url(#grad1)" />
+</svg>

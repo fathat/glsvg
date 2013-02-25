@@ -158,7 +158,7 @@ class LinearGradient(Gradient):
         else:
             return float(self.x2)
 
-    def get_y1(self, path):
+    def get_y2(self, path):
         if self.y1.endswith("%"):
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.y1)
@@ -166,7 +166,7 @@ class LinearGradient(Gradient):
         else:
             return float(self.y1)
 
-    def get_y2(self, path):
+    def get_y1(self, path):
         if self.y2.endswith("%"):
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.y2)
@@ -211,6 +211,12 @@ class LinearGradient(Gradient):
 
 class RadialGradient(Gradient):
     params = ['cx', 'cy', 'r', 'stops']
+
+    def __init__(self, *args):
+        self.cx = '50%'
+        self.cy = "50%"
+        self.r = "100%"
+        Gradient.__init__(self, *args)
 
     def grad_value(self, pt, path):
         return math.sqrt((pt[0] - self.get_cx(path)) ** 2 + (pt[1] - self.get_cy(path)) ** 2) / self.get_r(path)
