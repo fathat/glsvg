@@ -182,11 +182,15 @@ def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=Fa
     swap = False
     vertices = []
     color_list = []
+    tex_coords = []
+    ti = 0
 
     for line, color in zip(lines, colors):
         first = line.upper_v if not swap else line.lower_v
         second = line.lower_v if not swap else line.upper_v
 
+        tex_coords.append(float(ti)/len(lines))
+        ti += 1
         vertices.extend(first[0].tolist())
         color_list.extend(color)
         vertices.extend(second[0].tolist())
@@ -203,7 +207,7 @@ def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=Fa
             vertices.extend(second[-1].tolist())
             swap = not swap
 
-    graphics.draw_triangle_strip(vertices, color_list)
+    graphics.draw_triangle_strip(vertices, color_list, tex_coords)
 
 
 

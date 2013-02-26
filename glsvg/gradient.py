@@ -252,6 +252,7 @@ class RadialGradient(Gradient):
         gradient_shaders.radial_shader.uniformf("opacity", self.opacity*opacity)
         gradient_shaders.radial_shader.uniformf("radius", self.get_r(path))
         gradient_shaders.radial_shader.uniformf("center", self.get_cx(path), self.get_cy(path))
+        gradient_shaders.radial_shader.uniformf("focus", self.get_cx(path), self.get_cy(path))
         gradient_shaders.radial_shader.uniform_matrixf("worldTransform", False, svg_matrix_to_gl_matrix(transform))
         gradient_shaders.radial_shader.uniform_matrixf("gradientTransform",
                                      False,

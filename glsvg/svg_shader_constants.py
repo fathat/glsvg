@@ -14,6 +14,8 @@ void main()
 radial = """
 
 uniform vec2 center;
+uniform vec2 focus;
+
 uniform float radius;
 
 uniform vec4 stops;
@@ -38,12 +40,11 @@ void main()
     vec4 result;
     
     vec3 transformed = invGradientTransform*vec3(localCoords.x, localCoords.y, 1);
-    
-    //what is this actually doing?
-    vec3 realcenter = vec3(center.x, center.y, 1);
+
+    vec3 realcenter = vec3(focus.x, focus.y, 1);
 
     //calculate the intensity
-    float intensity = clamp(distance(transformed.xy, realcenter.xy) / radius, 0.0, 1.0 );
+    float intensity = clamp(distance(transformed.xy, focus.xy) / radius, 0.0, 1.0 );
     if(intensity <= stops.x)
     {
         result.rgba = mix(stop0, stop1, (intensity / stops.x));

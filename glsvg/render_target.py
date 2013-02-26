@@ -2,6 +2,34 @@ __author__ = 'Ian'
 import OpenGL.GL as gl
 
 
+class AlphaTexture1D:
+
+    def __init__(self, bits, width=64):
+        self.bits = bits
+        self.id = gl.glGenTextures(1)
+        self.width = width
+
+        self.bind()
+
+        gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
+
+        gl.glTexParameterf(gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        gl.glTexParameterf(gl.GL_TEXTURE_1D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+
+        gl.glTexImage1D(gl.GL_TEXTURE_1D,
+                        0, gl.GL_RGBA8, self.width,  0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, self.bits)
+
+        print "1D Tex OK? ", gl.glGetError() == gl.GL_NO_ERROR
+
+    def bind(self):
+        gl.glEnable(gl.GL_TEXTURE_1D)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, self.id)
+
+    def unbind(self):
+        gl.glBindTexture(gl.GL_TEXTURE_1D, 0)
+        gl.glDisable(gl.GL_TEXTURE_1D)
+
+
 class Texture2D:
 
     def __init__(self, w, h, wrap=True):

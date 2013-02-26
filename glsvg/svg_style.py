@@ -1,5 +1,7 @@
 from svg_constants import DEFAULT_FILL, DEFAULT_STROKE
 from svg_parser_utils import *
+from render_target import AlphaTexture1D
+
 
 class SVGStyle(object):
 
@@ -25,6 +27,8 @@ class SVGStyle(object):
         #: of alternating dashes and gaps.
         self.stroke_dasharray = []
 
+        self.stroke_texture = None
+
         if inherit_from:
             self.fill = inherit_from.fill
             self.stroke = inherit_from.stroke
@@ -44,8 +48,9 @@ class SVGStyle(object):
         self.stroke_opacity = float(element.get('stroke-opacity', 1))
 
         dash_array = element.get('stroke-dasharray', None)
-        if dash_array:
+        if dash_array and dash_array != 'none':
             self.stroke_dasharray = [float(x.strip()) for x in dash_array.split(',')]
+            self._init_stroke_texture()
 
         style = element.get('style')
         if style:
@@ -63,8 +68,10 @@ class SVGStyle(object):
                 self.stroke_width = parse_float(sw)
             if 'stroke-dasharray' in style_dict:
                 dash_array = style_dict['stroke-dasharray']
-                if dash_array:
-                    self.stroke_dasharray = [float(x.strip()) for x in dash_array.split(',')]
+                if dash_array != 'none':
+                    if dash_array:
+                        self.stroke_dasharray = [float(x.strip()) for x in dash_array.split(',')]
+                        self._init_stroke_texture()
             if 'opacity' in style_dict:
                 self.fill_opacity *= float(style_dict['opacity'])
                 self.stroke_opacity *= float(style_dict['opacity'])
@@ -74,6 +81,10 @@ class SVGStyle(object):
             self.stroke[3] = int(self.opacity * self.stroke_opacity * self.stroke[3])
         if isinstance(self.fill, list):
             self.fill[3] = int(self.opacity * self.fill_opacity * self.fill[3])
+
+    def _init_stroke_texture(self):
+        bits = [255, 0, 0, 255] + [0, 255, 0, 255]
+        self.stroke_texture = AlphaTexture1D(bits * 8, 16)
 
     def parse_style_attribute(self, attr):
         pass
