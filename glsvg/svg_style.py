@@ -63,7 +63,7 @@ class SVGStyle(object):
                 self.stroke_width = parse_float(sw)
             if 'stroke-dasharray' in style_dict:
                 dash_array = style_dict['stroke-dasharray']
-                if dash_array:
+                if dash_array and dash_array != 'none':
                     self.stroke_dasharray = [float(x.strip()) for x in dash_array.split(',')]
             if 'opacity' in style_dict:
                 self.fill_opacity *= float(style_dict['opacity'])
