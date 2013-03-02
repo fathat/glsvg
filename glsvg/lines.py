@@ -108,8 +108,11 @@ def split_line_by_pattern(points, pattern):
             b = current + normal * l
             current = b
             if not is_whitespace:
-                current_line.append(a)
-                current_line.append(b)
+                if len(current_line):
+                    current_line.append(b)
+                else:
+                    current_line.append(a)
+                    current_line.append(b)
             if should_flip:
                 if not is_whitespace:
                     lines.append(current_line)
