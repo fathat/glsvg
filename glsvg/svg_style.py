@@ -42,6 +42,8 @@ class SVGStyle(object):
         self.opacity *= float(element.get('opacity', 1))
         self.fill_opacity = float(element.get('fill-opacity', 1))
         self.stroke_opacity = float(element.get('stroke-opacity', 1))
+        self.stroke_linejoin = element.get('stroke-linejoin', 'miter')
+        self.stroke_miterlimit = float(element.get('stroke-miterlimit', 4))
 
         dash_array = element.get('stroke-dasharray', None)
         if dash_array:

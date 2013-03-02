@@ -93,6 +93,7 @@ def split_line_by_pattern(points, pattern):
     dg = DashGenerator(pattern)
     lines = []
     is_whitespace = False
+    current_line = []
 
     for p in xrange(1, len(points)):
         start = vec2(points[p-1])
@@ -107,10 +108,17 @@ def split_line_by_pattern(points, pattern):
             b = current + normal * l
             current = b
             if not is_whitespace:
-                lines.append((a, b))
+                current_line.append(a)
+                current_line.append(b)
             if should_flip:
+                if not is_whitespace:
+                    lines.append(current_line)
+                    current_line = []
                 is_whitespace = not is_whitespace
+
             amount_to_move -= l
+    if len(current_line):
+        lines.append(current_line)
     return lines
 
 
@@ -167,13 +175,12 @@ def calc_polyline(points, w, miter_limit=4, closed=False):
     return lines
 
 
-def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=False):
+def draw_polyline(points, w, color, miter_limit=10, closed=False, debug=False):
     if len(points) == 0:
         return
 
     #remove any duplicate points
     unique_points = []
-    unique_colors = []
     last_point = None
     for p in points:
         if p != last_point:
@@ -190,20 +197,15 @@ def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=Fa
     lines = calc_polyline(points, w, miter_limit, closed)
     swap = False
     vertices = []
-    color_list = []
 
-    for line, color in zip(lines, colors):
+    for line in lines:
         first = line.upper_v if not swap else line.lower_v
         second = line.lower_v if not swap else line.upper_v
 
         vertices.extend(first[0].tolist())
-        color_list.extend(color)
         vertices.extend(second[0].tolist())
-        color_list.extend(color)
         vertices.extend(first[1].tolist())
-        color_list.extend(color)
         vertices.extend(second[1].tolist())
-        color_list.extend(color)
 
         if len(first) > len(second):
             vertices.extend(first[-1].tolist())
@@ -212,7 +214,7 @@ def draw_polyline(points, w, colors=None, miter_limit=10, closed=False, debug=Fa
             vertices.extend(second[-1].tolist())
             swap = not swap
 
-    graphics.draw_triangle_strip(vertices, color_list)
+    graphics.draw_triangle_strip(vertices, color)
 
 
 

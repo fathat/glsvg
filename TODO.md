@@ -1,7 +1,7 @@
 GLSVG TODO LIST
 ============================
 
-DONE:
+Features:
  - [x] Path
  - [x] Rect
  - [x] Ellipse
@@ -10,17 +10,22 @@ DONE:
  - [x] Polyline
  - [x] Fill-rule (nonzero & evenodd)
  - [x] Inherited styles
- - [x] Support the "use" element
+ - [x] "use" element
+ - [x] stroke-dasharray
+ - [ ] stroke-linecap ("butt", "round", "square")
+ - [ ] stroke-linejoin
+ - [x] Draw lines as triangle strip (instead of triangle fan)
 
-Partially done:
+
  - [*] Patterns
+   - [ ] userSpaceOnUse
+   - [x] objectBoundingBox
 
 TODO:
  - [ ] Support creating a texture from SVG file
  - [ ] Support moving interior SVG path transforms
  - [ ] Support rendering interior SVG path transforms separately
- - [ ] Support stroke-dasharray
- - [ ] Draw lines as triangle strip (instead of triangle fan)
+ - [ ] Rounded rectangles
  - [ ] Clipping paths
  - [ ] Masking
  - [ ] Radial gradient focal points
