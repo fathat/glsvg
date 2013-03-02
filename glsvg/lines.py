@@ -76,32 +76,42 @@ class DashGenerator:
         if len(pattern) % 2 == 1:
             self.pattern *= 2
 
-    def next(self, accept_limit):
-        n = self.pattern[self.index]
+    def next(self, limit):
+        start_index = int(self.index)
+        pct = self.index - int(self.index)
+        n = self.pattern[int(self.index)] * (1-pct)
+        if n > limit:
+            n = limit
+        consumed = n/self.pattern[int(self.index)]
+        self.index = (self.index + consumed) % len(self.pattern)
 
-        self.index = (self.index + 1) % len(self.pattern)
-        return n
+        should_flip = (int(self.index) - start_index) > 0
+        return n, should_flip
 
 
-def split_line_by_pattern(start, end, pattern):
-    start = vec2(start)
-    end = vec2(end)
-    normal = (end - start).normalized()
-    remaining = (end - start).length()
+def split_line_by_pattern(points, pattern):
 
     dg = DashGenerator(pattern)
     lines = []
-    current = start
     is_whitespace = False
-    while remaining > 0:
-        l = dg.next(remaining)
-        a = current
-        b = current + normal * min(remaining, l)
-        current = b
-        if not is_whitespace:
-            lines.append((a, b))
-        is_whitespace = not is_whitespace
-        remaining -= l
+
+    for p in xrange(1, len(points)):
+        start = vec2(points[p-1])
+        end = vec2(points[p])
+        normal = (end - start).normalized()
+        amount_to_move = (end - start).length()
+
+        current = start
+        while amount_to_move > 0:
+            l, should_flip = dg.next(amount_to_move)
+            a = current
+            b = current + normal * l
+            current = b
+            if not is_whitespace:
+                lines.append((a, b))
+            if should_flip:
+                is_whitespace = not is_whitespace
+            amount_to_move -= l
     return lines
 
 
