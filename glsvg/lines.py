@@ -69,9 +69,8 @@ def _process_joint(ln, pln, miter_limit):
 class DashGenerator:
 
     def __init__(self, pattern):
-        self.pattern = pattern
+        self.pattern = [float(x) for x in pattern]
         self.index = 0
-        self.remainder = 0
 
         if len(pattern) % 2 == 1:
             self.pattern *= 2
@@ -85,7 +84,7 @@ class DashGenerator:
         consumed = n/self.pattern[int(self.index)]
         self.index = (self.index + consumed) % len(self.pattern)
 
-        should_flip = (int(self.index) - start_index) > 0
+        should_flip = int(self.index) != start_index
         return n, should_flip
 
 

@@ -14,6 +14,7 @@ void main()
 radial = """
 
 uniform vec2 center;
+uniform vec2 focalPoint;
 uniform float radius;
 
 uniform vec4 stops;
