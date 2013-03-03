@@ -204,10 +204,10 @@ class SVGPath(SVGRenderableElement):
                 ls = lines.split_line_by_pattern(loop_plus, self.style.stroke_dasharray)
 
                 for l in ls:
-                    lines.draw_polyline(l, stroke_width, color=strokes[0], join_type=self.style.stroke_linejoin, miter_limit=miter_limit)
+                    lines.draw_polyline(l, stroke_width, color=strokes[0], line_cap=self.style.stroke_linecap, join_type=self.style.stroke_linejoin, miter_limit=miter_limit)
 
             else:
-                lines.draw_polyline(loop_plus, stroke_width, color=strokes[0], join_type=self.style.stroke_linejoin, miter_limit=miter_limit)
+                lines.draw_polyline(loop_plus, stroke_width, color=strokes[0], line_cap=self.style.stroke_linecap, join_type=self.style.stroke_linejoin, miter_limit=miter_limit)
 
     def _render_stroke_stencil(self):
         if not self.outline:

@@ -44,6 +44,7 @@ class SVGStyle(object):
         self.stroke_opacity = float(element.get('stroke-opacity', 1))
         self.stroke_linejoin = element.get('stroke-linejoin', 'miter')
         self.stroke_miterlimit = float(element.get('stroke-miterlimit', 4))
+        self.stroke_linecap = element.get('stroke-linecap', 'butt')
 
         dash_array = element.get('stroke-dasharray', None)
         if dash_array:
@@ -69,6 +70,8 @@ class SVGStyle(object):
                     self.stroke_dasharray = [float(x.strip()) for x in dash_array.split(',')]
             if 'stroke-linejoin' in style_dict:
                 self.stroke_linejoin = style_dict['stroke-linejoin']
+            if 'stroke-linecap' in style_dict:
+                self.stroke_linecap = style_dict['stroke-linecap']
             if 'opacity' in style_dict:
                 self.fill_opacity *= float(style_dict['opacity'])
                 self.stroke_opacity *= float(style_dict['opacity'])

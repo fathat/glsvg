@@ -13,10 +13,8 @@ Features:
  - [x] "use" element
  - [x] stroke-dasharray
  - [ ] stroke-linecap ("butt", "round", "square")
- - [ ] stroke-linejoin
+ - [x] stroke-linejoin ("miter", "round", "bevel")
  - [x] Draw lines as triangle strip (instead of triangle fan)
-
-
  - [*] Patterns
    - [ ] userSpaceOnUse
    - [x] objectBoundingBox

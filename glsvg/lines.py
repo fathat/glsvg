@@ -17,6 +17,10 @@ class LineSegment(object):
         self.connector = []
 
     @property
+    def direction(self):
+        return (self.end-self.start).normalized()
+
+    @property
     def upper_edge(self):
         return LineSegment(self.start + self.up_normal,
                            self.end + self.up_normal)
@@ -189,7 +193,7 @@ def split_line_by_pattern(points, pattern):
     return lines
 
 
-def calc_polyline(points, w, join_type='miter', miter_limit=4, closed=False):
+def calc_polyline(points, w, line_cap='butt', join_type='miter', miter_limit=4, closed=False):
 
     miter_length = w * miter_limit
     points = [vec2(p) for p in points]
@@ -203,6 +207,11 @@ def calc_polyline(points, w, join_type='miter', miter_limit=4, closed=False):
 
     lines[0].upper_join = lines[0].upper_edge.start
     lines[0].lower_join = lines[0].lower_edge.start
+
+    if line_cap == 'square':
+        ext = lines[0].direction * w * -0.5
+        lines[0].upper_join = lines[0].upper_join + ext
+        lines[0].lower_join = lines[0].lower_join + ext
 
     for i in range(1, len(lines)):
         ln, pln = lines[i], lines[i-1]
@@ -238,15 +247,27 @@ def calc_polyline(points, w, join_type='miter', miter_limit=4, closed=False):
             ll.lower_v.append(lower_join)
 
     else:
-        ll.upper_v.append(ll.upper_join)
-        ll.upper_v.append(ll.upper_edge.end)
-        ll.lower_v.append(ll.lower_join)
-        ll.lower_v.append(ll.lower_edge.end)
+        if line_cap == 'butt':
+            ll.upper_v.append(ll.upper_join)
+            ll.upper_v.append(ll.upper_edge.end)
+            ll.lower_v.append(ll.lower_join)
+            ll.lower_v.append(ll.lower_edge.end)
+        elif line_cap == 'square':
+            ext = ll.direction * w*0.5
+            ll.upper_v.append(ll.upper_join)
+            ll.upper_v.append(ll.upper_edge.end + ext)
+            ll.lower_v.append(ll.lower_join)
+            ll.lower_v.append(ll.lower_edge.end + ext)
+        elif line_cap == 'round':
+            ll.upper_v.append(ll.upper_join)
+            ll.upper_v.append(ll.upper_edge.end)
+            ll.lower_v.append(ll.lower_join)
+            ll.lower_v.append(ll.lower_edge.end)
 
     return lines
 
 
-def draw_polyline(points, w, color, join_type='miter', miter_limit=4, closed=False, debug=False):
+def draw_polyline(points, w, color, line_cap='butt', join_type='miter', miter_limit=4, closed=False, debug=False):
     if len(points) == 0:
         return
 
@@ -265,7 +286,7 @@ def draw_polyline(points, w, color, join_type='miter', miter_limit=4, closed=Fal
     if points[0] == points[-1]:
         closed = True
 
-    lines = calc_polyline(points, w, join_type, miter_limit, closed)
+    lines = calc_polyline(points, w, line_cap, join_type, miter_limit, closed)
     swap = False
     vertices = []
 
