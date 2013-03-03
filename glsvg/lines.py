@@ -17,6 +17,11 @@ class LineSegment(object):
         self.connector = []
 
     @property
+    def angle(self):
+        d = self.direction
+        return math.atan2(d.y, d.x)
+
+    @property
     def direction(self):
         return (self.end-self.start).normalized()
 
@@ -306,8 +311,11 @@ def draw_polyline(points, w, color, line_cap='butt', join_type='miter', miter_li
             if len(first) != len(second):
                 swap = not swap
 
-
     graphics.draw_triangle_strip(vertices, color)
+
+    if line_cap == 'round' and not closed:
+        graphics.draw_round_cap(lines[0].start, w*0.5, lines[0].angle - math.pi)
+        graphics.draw_round_cap(lines[-1].end, w*0.5, lines[-1].angle)
 
 
 

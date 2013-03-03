@@ -1,5 +1,5 @@
 import OpenGL.GL as gl
-
+import math
 
 def draw_triangle_strip(vertices, color):
     if color:
@@ -11,6 +11,18 @@ def draw_triangle_strip(vertices, color):
     gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, len(vertices) / 2)
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
     #gl.glDisableClientState(gl.GL_COLOR_ARRAY)
+
+
+def draw_round_cap(center, radius, angle):
+    gl.glBegin(gl.GL_TRIANGLE_FAN)
+    gl.glVertex2f(center.x, center.y)
+    for theta in xrange(-90, 91, 10):
+        at = theta*(math.pi/180) + angle
+        x = math.cos(at) * radius + center.x
+        y = math.sin(at) * radius + center.y
+
+        gl.glVertex2f(x, y)
+    gl.glEnd()
 
 
 def draw_colored_triangles(tris, colors):
