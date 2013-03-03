@@ -203,11 +203,30 @@ class SVGPath(SVGRenderableElement):
             if len(self.style.stroke_dasharray):
                 ls = lines.split_line_by_pattern(loop_plus, self.style.stroke_dasharray)
 
+                if ls[0][0] == ls[-1][-1]:
+                    #if the last line end point equals the first line start point,
+                    #this is a "closed" line, so combine the first and the last line
+                    combined_line = ls[-1] + ls[0]
+                    ls[0] = combined_line
+                    del ls[-1]
+
                 for l in ls:
-                    lines.draw_polyline(l, stroke_width, color=strokes[0], line_cap=self.style.stroke_linecap, join_type=self.style.stroke_linejoin, miter_limit=miter_limit)
+                    lines.draw_polyline(
+                        l,
+                        stroke_width,
+                        color=strokes[0],
+                        line_cap=self.style.stroke_linecap,
+                        join_type=self.style.stroke_linejoin,
+                        miter_limit=miter_limit)
 
             else:
-                lines.draw_polyline(loop_plus, stroke_width, color=strokes[0], line_cap=self.style.stroke_linecap, join_type=self.style.stroke_linejoin, miter_limit=miter_limit)
+                lines.draw_polyline(
+                    loop_plus,
+                    stroke_width,
+                    color=strokes[0],
+                    line_cap=self.style.stroke_linecap,
+                    join_type=self.style.stroke_linejoin,
+                    miter_limit=miter_limit)
 
     def _render_stroke_stencil(self):
         if not self.outline:
