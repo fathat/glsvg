@@ -85,7 +85,7 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
         pln.upper_v.append(pln.upper_join)
         pln.upper_v.append(pln.upper_edge.end)
         pln.upper_v.append(ln.upper_join)
-    else:
+    elif not rounded:
         pln.upper_v.append(pln.upper_join)
         pln.upper_v.append(ln.upper_join)
 
@@ -93,8 +93,8 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
 
     if rounded and not lo_intersection:
         ln.lower_join = ln.lower_edge.start
+        pln.upper_v.append(pln.upper_join)
         pln.lower_v.append(pln.lower_join)
-        pln.lower_v.append(pln.lower_edge.end)
 
         #arc to next lines upper-join
         base = pln.end
@@ -108,18 +108,16 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
         start_angle = av.angle()
         target_angle = bv.angle()
 
-        if start_angle > target_angle:
-            start_angle, target_angle = target_angle, start_angle
-
         theta = start_angle
         pln.upper_v.append(ln.upper_join)
 
-        while theta < target_angle:
+        while theta > target_angle:
             v = base + (vec2(math.cos(theta), math.sin(theta)) * dist)
-            pln.upper_v.append(ln.upper_join)
+
             pln.lower_v.append(v)
-            theta += 0.1
-        pln.lower_v.append(pln.lower_join)
+            pln.upper_v.append(ln.upper_join)
+            theta -= 0.2
+        pln.lower_v.append(ln.lower_join)
 
     elif ml2 > miter_limit and not lo_intersection:
         #bevel
