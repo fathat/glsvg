@@ -208,10 +208,12 @@ def calc_polyline(points, w, line_cap='butt', join_type='miter', miter_limit=4, 
     lines[0].upper_join = lines[0].upper_edge.start
     lines[0].lower_join = lines[0].lower_edge.start
 
-    if line_cap == 'square':
+    if line_cap == 'square' and not closed:
         ext = lines[0].direction * w * -0.5
         lines[0].upper_join = lines[0].upper_join + ext
         lines[0].lower_join = lines[0].lower_join + ext
+
+
 
     for i in range(1, len(lines)):
         ln, pln = lines[i], lines[i-1]
