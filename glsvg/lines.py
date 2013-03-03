@@ -218,8 +218,6 @@ def calc_polyline(points, w, line_cap='butt', join_type='miter', miter_limit=4, 
         lines[0].upper_join = lines[0].upper_join + ext
         lines[0].lower_join = lines[0].lower_join + ext
 
-
-
     for i in range(1, len(lines)):
         ln, pln = lines[i], lines[i-1]
         _process_joint(ln, pln, miter_length, join_type=='round')
@@ -254,7 +252,7 @@ def calc_polyline(points, w, line_cap='butt', join_type='miter', miter_limit=4, 
             ll.lower_v.append(lower_join)
 
     else:
-        if line_cap == 'butt':
+        if line_cap == 'butt' or line_cap == 'round':
             ll.upper_v.append(ll.upper_join)
             ll.upper_v.append(ll.upper_edge.end)
             ll.lower_v.append(ll.lower_join)
@@ -265,11 +263,6 @@ def calc_polyline(points, w, line_cap='butt', join_type='miter', miter_limit=4, 
             ll.upper_v.append(ll.upper_edge.end + ext)
             ll.lower_v.append(ll.lower_join)
             ll.lower_v.append(ll.lower_edge.end + ext)
-        elif line_cap == 'round':
-            ll.upper_v.append(ll.upper_join)
-            ll.upper_v.append(ll.upper_edge.end)
-            ll.lower_v.append(ll.lower_join)
-            ll.lower_v.append(ll.lower_edge.end)
 
     return lines
 
