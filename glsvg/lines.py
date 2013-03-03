@@ -75,7 +75,7 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
             v = base + (vec2(math.cos(theta), math.sin(theta)) * dist)
             pln.upper_v.append(v)
             pln.lower_v.append(ln.lower_join)
-            theta += 0.1
+            theta += 0.2
 
         pln.upper_v.append(ln.upper_join)
         return
