@@ -53,6 +53,9 @@ class vec2(object):
         else:
             return vec2(self.x, self.y) / self.length()
 
+    def angle(self):
+        return math.atan2(self.y, self.x)
+
     def length(self):
         return math.sqrt(self.x ** 2 + self.y ** 2)
 

@@ -14,6 +14,7 @@ class LineSegment(object):
             self.calculate_tangents()
         self.upper_join = None
         self.lower_join = None
+        self.connector = []
 
     @property
     def upper_edge(self):
@@ -35,7 +36,7 @@ class LineSegment(object):
                               math.sin(angle + radian(90)) * half_width)
 
 
-def _process_joint(ln, pln, miter_limit):
+def _process_joint(ln, pln, miter_limit, rounded=False):
     up_intersection, ln.upper_join = ln_intersection(pln.upper_edge, ln.upper_edge)
     lo_intersection, ln.lower_join = ln_intersection(pln.lower_edge, ln.lower_edge)
 
@@ -45,7 +46,40 @@ def _process_joint(ln, pln, miter_limit):
     if ln.lower_join == None:
         ln.lower_join = ln.lower_edge.start
 
-    if line_length(ln.upper_edge.start, ln.upper_join) > miter_limit and not up_intersection:
+    ml1 = line_length(ln.lower_edge.start, ln.upper_join)
+
+    if rounded:
+        pass
+
+
+    if rounded and not up_intersection:
+        ln.upper_join = ln.upper_edge.start
+        pln.upper_v.append(pln.upper_join)
+        pln.upper_v.append(pln.upper_edge.end)
+
+        #arc to next lines upper-join
+        base = ln.lower_join
+        start = pln.upper_edge.end
+        target = ln.upper_join
+
+        dist = (start-base).length()
+        av = (start - base).normalized()
+        bv = (target - base).normalized()
+
+        start_angle = av.angle()
+        target_angle = bv.angle()
+
+        theta = start_angle
+        pln.lower_v.append(pln.lower_join)
+        while theta < target_angle:
+            v = base + (vec2(math.cos(theta), math.sin(theta)) * dist)
+            pln.upper_v.append(v)
+            pln.lower_v.append(base)
+            theta += 0.1
+
+        pln.upper_v.append(ln.upper_join)
+        return
+    elif ml1 > miter_limit and not up_intersection:
         #bevel
         ln.upper_join = ln.upper_edge.start
         pln.upper_v.append(pln.upper_join)
@@ -55,7 +89,39 @@ def _process_joint(ln, pln, miter_limit):
         pln.upper_v.append(pln.upper_join)
         pln.upper_v.append(ln.upper_join)
 
-    if line_length(ln.lower_edge.start, ln.lower_join) > miter_limit and not lo_intersection:
+    ml2 = line_length(ln.upper_edge.start, ln.lower_join)
+
+    if rounded and not lo_intersection:
+        ln.lower_join = ln.lower_edge.start
+        pln.lower_v.append(pln.lower_join)
+        pln.lower_v.append(pln.lower_edge.end)
+
+        #arc to next lines upper-join
+        base = ln.upper_join
+        start = pln.lower_edge.end
+        target = ln.lower_join
+
+        dist = (start-base).length()
+        av = (start - base).normalized()
+        bv = (target - base).normalized()
+
+        start_angle = av.angle()
+        target_angle = bv.angle()
+
+        if start_angle > target_angle:
+            start_angle, target_angle = target_angle, start_angle
+
+        theta = start_angle
+        pln.upper_v.append(ln.upper_join)
+
+        while theta < target_angle:
+            v = base + (vec2(math.cos(theta), math.sin(theta)) * dist)
+            pln.upper_v.append(base)
+            pln.lower_v.append(v)
+            theta += 0.1
+        pln.lower_v.append(pln.lower_join)
+
+    elif ml2 > miter_limit and not lo_intersection:
         #bevel
         ln.lower_join = ln.lower_edge.start
         pln.lower_v.append(pln.lower_join)
@@ -125,7 +191,9 @@ def split_line_by_pattern(points, pattern):
     return lines
 
 
-def calc_polyline(points, w, miter_limit=4, closed=False):
+def calc_polyline(points, w, join_type='miter', miter_limit=4, closed=False):
+
+    miter_length = w * miter_limit
     points = [vec2(p) for p in points]
     if closed and points[0] != points[-1]:
         points.append(vec2(points[0]))
@@ -140,7 +208,7 @@ def calc_polyline(points, w, miter_limit=4, closed=False):
 
     for i in range(1, len(lines)):
         ln, pln = lines[i], lines[i-1]
-        _process_joint(ln, pln, miter_limit)
+        _process_joint(ln, pln, miter_length, join_type=='round')
 
     ll = lines[-1]
     lf = lines[0]
@@ -151,7 +219,8 @@ def calc_polyline(points, w, miter_limit=4, closed=False):
         if upper_join == None: upper_join = ll.upper_edge.end
         if lower_join == None: lower_join = ll.lower_edge.end
 
-        if line_length(ll.upper_edge.end, upper_join) > miter_limit and b_up_int:
+        if line_length(ll.lower_edge.end, upper_join) > miter_length and b_up_int:
+            #bevel
             ll.upper_v.append(ll.upper_join)
             ll.upper_v.append(ll.upper_edge.end)
             ll.upper_v.append(lf.upper_edge.start)
@@ -160,7 +229,8 @@ def calc_polyline(points, w, miter_limit=4, closed=False):
             ll.upper_v.append(ll.upper_join)
             ll.upper_v.append(upper_join)
 
-        if line_length(ll.lower_edge.end, lower_join) > miter_limit and b_lo_int:
+        if line_length(ll.upper_edge.end, lower_join) > miter_length and b_lo_int:
+            #bevel
             ll.lower_v.append(ll.lower_join)
             ll.lower_v.append(ll.lower_edge.end)
             ll.lower_v.append(lf.lower_edge.start)
@@ -178,7 +248,7 @@ def calc_polyline(points, w, miter_limit=4, closed=False):
     return lines
 
 
-def draw_polyline(points, w, color, miter_limit=10, closed=False, debug=False):
+def draw_polyline(points, w, color, join_type='miter', miter_limit=4, closed=False, debug=False):
     if len(points) == 0:
         return
 
@@ -197,7 +267,7 @@ def draw_polyline(points, w, color, miter_limit=10, closed=False, debug=False):
     if points[0] == points[-1]:
         closed = True
 
-    lines = calc_polyline(points, w, miter_limit, closed)
+    lines = calc_polyline(points, w, join_type, miter_limit, closed)
     swap = False
     vertices = []
 
@@ -205,17 +275,16 @@ def draw_polyline(points, w, color, miter_limit=10, closed=False, debug=False):
         first = line.upper_v if not swap else line.lower_v
         second = line.lower_v if not swap else line.upper_v
 
-        vertices.extend(first[0].tolist())
-        vertices.extend(second[0].tolist())
-        vertices.extend(first[1].tolist())
-        vertices.extend(second[1].tolist())
+        i = 0
+        for i in xrange(max(len(first), len(second))):
+            if i<len(first):
+                vertices.extend(first[i].tolist())
+            if i<len(second):
+                vertices.extend(second[i].tolist())
 
-        if len(first) > len(second):
-            vertices.extend(first[-1].tolist())
-            swap = not swap
-        elif len(second) > len(first):
-            vertices.extend(second[-1].tolist())
-            swap = not swap
+            if len(first) != len(second):
+                swap = not swap
+
 
     graphics.draw_triangle_strip(vertices, color)
 

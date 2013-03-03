@@ -185,9 +185,9 @@ class SVGPath(SVGRenderableElement):
         stroke = self.style.stroke
         stroke_width = self.style.stroke_width
 
-        is_bevel = self.style.stroke_linejoin == 'bevel'
+        is_miter = self.style.stroke_linejoin == 'miter'
 
-        miter_limit = self.style.stroke_miterlimit if not is_bevel else 0
+        miter_limit = self.style.stroke_miterlimit if is_miter else 0
 
         for loop in self.outline:
             self.svg.n_lines += len(loop) - 1
@@ -204,10 +204,10 @@ class SVGPath(SVGRenderableElement):
                 ls = lines.split_line_by_pattern(loop_plus, self.style.stroke_dasharray)
 
                 for l in ls:
-                    lines.draw_polyline(l, stroke_width, color=strokes[0], miter_limit=miter_limit)
+                    lines.draw_polyline(l, stroke_width, color=strokes[0], join_type=self.style.stroke_linejoin, miter_limit=miter_limit)
 
             else:
-                lines.draw_polyline(loop_plus, stroke_width, color=strokes[0], miter_limit=miter_limit)
+                lines.draw_polyline(loop_plus, stroke_width, color=strokes[0], join_type=self.style.stroke_linejoin, miter_limit=miter_limit)
 
     def _render_stroke_stencil(self):
         if not self.outline:
