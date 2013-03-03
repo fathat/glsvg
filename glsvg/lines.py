@@ -58,7 +58,7 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
         pln.upper_v.append(pln.upper_edge.end)
 
         #arc to next lines upper-join
-        base = ln.lower_join
+        base = pln.end
         start = pln.upper_edge.end
         target = ln.upper_join
 
@@ -74,7 +74,7 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
         while theta < target_angle:
             v = base + (vec2(math.cos(theta), math.sin(theta)) * dist)
             pln.upper_v.append(v)
-            pln.lower_v.append(base)
+            pln.lower_v.append(ln.lower_join)
             theta += 0.1
 
         pln.upper_v.append(ln.upper_join)
@@ -97,7 +97,7 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
         pln.lower_v.append(pln.lower_edge.end)
 
         #arc to next lines upper-join
-        base = ln.upper_join
+        base = pln.end
         start = pln.lower_edge.end
         target = ln.lower_join
 
@@ -116,7 +116,7 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
 
         while theta < target_angle:
             v = base + (vec2(math.cos(theta), math.sin(theta)) * dist)
-            pln.upper_v.append(base)
+            pln.upper_v.append(ln.upper_join)
             pln.lower_v.append(v)
             theta += 0.1
         pln.lower_v.append(pln.lower_join)
