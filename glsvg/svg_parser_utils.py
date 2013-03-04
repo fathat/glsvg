@@ -15,11 +15,22 @@ def parse_style(string):
     return s_dict
 
 def parse_float(txt):
+    #assume 90 dpi
     if txt.endswith('%'):
         pct = float(txt[:-1])/100.0
         return pct
-    elif txt.endswith('px') or txt.endswith('pt'):
+    elif txt.endswith('px'):
         return float(txt[:-2])
+    elif txt.endswith('pt'):
+        return float(txt[:-2]) * 1.25
+    elif txt.endswith('pc'):
+        return float(txt[:-2]) * 15
+    elif txt.endswith('mm'):
+        return float(txt[:-2]) * 3.543307
+    elif txt.endswith('cm'):
+        return float(txt[:-2]) * 35.43307
+    elif txt.endswith('in'):
+        return float(txt[:-2]) * 90
     else:
         return float(txt)
 
