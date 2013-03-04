@@ -163,7 +163,8 @@ class SVGPath(SVGRenderableElement):
         #: The base shape. Possible values: path, rect, circle, ellipse, line, polygon, polyline
         self.shape = None
 
-        self.bb = None
+        #: The bounding box
+        self._bounding_box = None
 
         path_builder = SVGPathBuilder(
                         self,
@@ -267,7 +268,7 @@ class SVGPath(SVGRenderableElement):
 
         (min_x, min_y, max_x, max_y)
         '''
-        if not self.bb:
+        if not self._bounding_box:
 
             min_x = None
             max_x = None
@@ -297,8 +298,8 @@ class SVGPath(SVGRenderableElement):
                             max_x = x
                         if max_y is None or y > max_y:
                             max_y = y
-            self.bb = (min_x, min_y, max_x, max_y)
-        return self.bb
+            self._bounding_box = (min_x, min_y, max_x, max_y)
+        return self._bounding_box
 
     def _render_pattern_fill(self):
         fill = self.style.fill
