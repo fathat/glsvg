@@ -31,6 +31,8 @@ def parse_float(txt):
         return float(txt[:-2]) * 35.43307
     elif txt.endswith('in'):
         return float(txt[:-2]) * 90
+    elif txt.endswith('em') or txt.endswith('ex'):
+        return float(txt[:-2]) * 10
     else:
         return float(txt)
 

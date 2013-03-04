@@ -25,11 +25,26 @@ class SVGStyle(object):
         #: of alternating dashes and gaps.
         self.stroke_dasharray = []
 
+        #: The maximum ratio of the distance between a line joints inner
+        #: connection and outer miter edge vs the line width
+        self.stroke_miterlimit = 4
+
+        #: The line cap, possible values are 'butt', 'square', 'round'
+        self.stroke_linecap = 'butt'
+
+        #: Current style font family
+        self.font_family = 'Arial'
+
+        #: Current font size
+        self.font_size = 8
+
         if inherit_from:
             self.fill = inherit_from.fill
             self.stroke = inherit_from.stroke
             self.fill_rule = inherit_from.fill_rule
             self.stroke_width = inherit_from.stroke_width
+            self.font_family = inherit_from.font_family
+            self.font_size = inherit_from.font_size
 
     def from_element(self, element):
         """Read relevant attributes off XML element"""
@@ -37,7 +52,7 @@ class SVGStyle(object):
         self.fill_rule = element.get('fill-rule', self.fill_rule)
 
         self.stroke = parse_color(element.get('stroke'), self.stroke)
-        self.stroke_width = float(element.get('stroke-width', 1.0))
+        self.stroke_width = parse_float(element.get('stroke-width', '1.0'))
 
         self.opacity *= float(element.get('opacity', 1))
         self.fill_opacity = float(element.get('fill-opacity', 1))
@@ -46,6 +61,9 @@ class SVGStyle(object):
         self.stroke_miterlimit = float(element.get('stroke-miterlimit', 4))
         self.stroke_linecap = element.get('stroke-linecap', 'butt')
 
+        self.font_family = element.get('font-family', 'Arial')
+        self.font_size = parse_float(element.get('font-size', '8'))
+
         dash_array = element.get('stroke-dasharray', None)
         if dash_array:
             self.stroke_dasharray = [float(x.strip()) for x in dash_array.split(',')]
@@ -53,6 +71,10 @@ class SVGStyle(object):
         style = element.get('style')
         if style:
             style_dict = parse_style(style)
+            if 'font-family' in style_dict:
+                self.font_family = style_dict['font-family']
+            if 'font-size' in style_dict:
+                self.font_size = parse_float(style_dict['font-size'])
             if 'fill' in style_dict:
                 self.fill = parse_color(style_dict['fill'])
             if 'fill-opacity' in style_dict:

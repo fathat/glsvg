@@ -199,7 +199,8 @@ class SVGPath(SVGRenderableElement):
                 strokes = [g.sample(x, self) for x in loop_plus]
             else:
                 strokes = [stroke for x in loop_plus]
-
+            if len(loop_plus) == 0:
+                continue
             if len(self.style.stroke_dasharray):
                 ls = lines.split_line_by_pattern(loop_plus, self.style.stroke_dasharray)
 

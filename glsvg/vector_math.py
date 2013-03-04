@@ -114,8 +114,12 @@ class Matrix(object):
                 x, y = [float(x) for x in parse_list(string[10:-1])]
                 self.values = [1, 0, 0, 1, x, y]
             elif string.startswith('scale('):
-                sx, sy = [float(x) for x in parse_list(string[6:-1])]
-                self.values = [sx, 0, 0, sy, 0, 0]
+                scale_vars = [float(x) for x in parse_list(string[6:-1])]
+
+                if len(scale_vars) == 1:
+                    self.values = [scale_vars[0], 0, 0, scale_vars[0], 0, 0]
+                else:
+                    self.values = [scale_vars[0], 0, 0, scale_vars[1], 0, 0]
             elif string.startswith('rotate('):
                 angle = float(string[7:-1])
                 theta = radian(angle)

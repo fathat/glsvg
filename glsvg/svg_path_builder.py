@@ -31,10 +31,10 @@ class SVGPathBuilder(object):
             self._read_path_commands(e, path)
         elif e.tag.endswith('rect'):
             self.shape = path.shape = 'rect'
-            x = float(e.get('x', 0))
-            y = float(e.get('y', 0))
-            h = float(e.get('height'))
-            w = float(e.get('width'))
+            x = parse_float(e.get('x', '0'))
+            y = parse_float(e.get('y', '0'))
+            h = parse_float(e.get('height'))
+            w = parse_float(e.get('width'))
             path.x, path.y, path.w, path.h = x, y, w, h
             self._set_cursor_position(x, y)
             self._line_to(x + w, y)
