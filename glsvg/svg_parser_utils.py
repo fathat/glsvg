@@ -18,7 +18,7 @@ def parse_float(txt):
     if txt.endswith('%'):
         pct = float(txt[:-1])/100.0
         return pct
-    elif txt.endswith('px'):
+    elif txt.endswith('px') or txt.endswith('pt'):
         return float(txt[:-2])
     else:
         return float(txt)
