@@ -23,15 +23,21 @@ def draw_triangle_strip(vertices, color):
 
 def draw_round_cap(center, radius, angle):
     n_vertices = 1
-    gl.glBegin(gl.GL_TRIANGLE_FAN)
-    gl.glVertex2f(center.x, center.y)
+    v = [center.x, center.y]
+
     for theta in xrange(-90, 91, 10):
         at = theta*(math.pi/180) + angle
         x = math.cos(at) * radius + center.x
         y = math.sin(at) * radius + center.y
         n_vertices += 1
-        gl.glVertex2f(x, y)
-    gl.glEnd()
+        v.append(x)
+        v.append(y)
+
+    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glVertexPointer(2, gl.GL_FLOAT, 0, v)
+    gl.glDrawArrays(gl.GL_TRIANGLE_FAN, 0, len(v) / 2)
+    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+
     add_triangle_stats(n_vertices-1)
 
 
