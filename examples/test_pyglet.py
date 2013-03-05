@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath('../'))
 import pyglet
 from pyglet.gl import *
 import glsvg
-
+import glsvg.graphics
 
 class SVGWindow(pyglet.window.Window):
 
@@ -16,7 +16,7 @@ class SVGWindow(pyglet.window.Window):
         self.filename = None
         self.svg = None
         self.fpslabel = pyglet.clock.ClockDisplay()
-        self.statslabel = pyglet.text.Label("tris: N/A, lines: N/A", color=(0,0,0,255))
+        self.statslabel = pyglet.text.Label("fill tris: N/A, lines: N/A", color=(0,0,0,255))
         self.statslabel.anchor_y = "top"
 
         self.offset_x, self.offset_y = 400, 300
@@ -69,7 +69,7 @@ class SVGWindow(pyglet.window.Window):
         print 'Parsing', self.filename
         self.svg = glsvg.SVGDoc(self.filename)
         self.svg.anchor_x, self.svg.anchor_y = 'center', 'center'
-        self.statslabel.text = "tris: " + str(self.svg.n_tris) + ", lines: " + str(self.svg.n_lines)
+        self.statslabel.text = "total tris: " + str(glsvg.graphics.triangles_drawn) + ", fill-tris: " + str(self.svg.n_tris) + ", lines: " + str(self.svg.n_lines)
 
     def on_key_press(self, symbol, modifiers):
         if symbol == pyglet.window.key.RIGHT:
@@ -117,6 +117,7 @@ class SVGWindow(pyglet.window.Window):
         glTranslatef(-self.offset_x, -self.offset_y, 0)
         self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
 
+        #self.svg.render()
         #draw patterns
         i = 0
         for pattern in self.svg.patterns.values():

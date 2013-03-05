@@ -9,7 +9,7 @@ import traceback
 from svg_path_builder import SVGPathBuilder
 from glutils import DisplayListGenerator
 import svg_style
-from vector_math import Matrix
+from vector_math import Matrix, BoundingBox
 from svg_constants import XMLNS
 
 
@@ -155,7 +155,7 @@ class SVGPath(SVGRenderableElement):
             self.config = svg.config.super_detailed()
 
         #: The actual path elements, as a list of vertices
-        self.outline = None
+        self.outlines = None
 
         #: The triangles that comprise the inner fill
         self.triangles = None
@@ -171,16 +171,11 @@ class SVGPath(SVGRenderableElement):
                         element,
                         self.config)
 
-        self.outline = path_builder.path
+        self.outlines = path_builder.path
 
         self.triangles = path_builder.polygon
 
         self.display_list = None
-
-    def _generate_display_list(self):
-        with DisplayListGenerator() as dl:
-            self.render()
-            self.display_list = dl
 
     def _render_stroke(self):
         stroke = self.style.stroke
@@ -190,7 +185,7 @@ class SVGPath(SVGRenderableElement):
 
         miter_limit = self.style.stroke_miterlimit if is_miter else 0
 
-        for loop in self.outline:
+        for loop in self.outlines:
             self.svg.n_lines += len(loop) - 1
             loop_plus = []
             for i in xrange(len(loop) - 1):
@@ -230,16 +225,6 @@ class SVGPath(SVGRenderableElement):
                     join_type=self.style.stroke_linejoin,
                     miter_limit=miter_limit)
 
-    def _render_stroke_stencil(self):
-        if not self.outline:
-            return
-        stroke_width = self.style.stroke_width
-        for loop in self.outline:
-            loop_plus = []
-            for i in xrange(len(loop) - 1):
-                loop_plus += [loop[i], loop[i+1]]
-            lines.draw_polyline(loop_plus, stroke_width)
-
     def _render_gradient_fill(self):
         fill = self.style.fill
         tris = self.triangles
@@ -269,37 +254,14 @@ class SVGPath(SVGRenderableElement):
         (min_x, min_y, max_x, max_y)
         '''
         if not self._bounding_box:
-
-            min_x = None
-            max_x = None
-            min_y = None
-            max_y = None
+            self._bounding_box = BoundingBox()
 
             if self.triangles:
-                for vtx in self.triangles:
-                    x, y = vtx
-                    if min_x is None or x < min_x:
-                        min_x = x
-                    if min_y is None or y < min_y:
-                        min_y = y
-                    if max_x is None or x > max_x:
-                        max_x = x
-                    if max_y is None or y > max_y:
-                        max_y = y
-            if self.outline:
-                for p in self.outline:
-                    for vtx in p:
-                        x, y = vtx
-                        if min_x is None or x < min_x:
-                            min_x = x
-                        if min_y is None or y < min_y:
-                            min_y = y
-                        if max_x is None or x > max_x:
-                            max_x = x
-                        if max_y is None or y > max_y:
-                            max_y = y
-            self._bounding_box = (min_x, min_y, max_x, max_y)
-        return self._bounding_box
+                self._bounding_box.expand(self.triangles)
+            if self.outlines:
+                for o in self.outlines:
+                    self._bounding_box.expand(o)
+        return self._bounding_box.extents()
 
     def _render_pattern_fill(self):
         fill = self.style.fill
@@ -325,36 +287,6 @@ class SVGPath(SVGRenderableElement):
         if pattern:
             pattern.unbind_texture()
 
-    def _render_stenciled(self):
-        with self.transform:
-            if self.triangles:
-                try:
-                    #if stencil is on
-                    if self.svg.is_stencil_enabled():
-                        glEnable(GL_STENCIL_TEST)
-                        mask = self.svg._next_stencil_mask()
-                        glStencilFunc(GL_NEVER, mask, 0xFF)
-                        glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP)  # draw mask id on test fail (always)
-                        glStencilMask(mask)
-                        self._render_stroke_stencil()
-
-                        #draw where stencil hasn't masked out
-                        glStencilFunc(GL_NOTEQUAL, mask, 0xFF)
-
-                    #stencil fill
-                    if isinstance(self.style.fill, str) and self.style.fill in self.svg.patterns:
-                        self._render_pattern_fill()
-                    else:
-                        self._render_gradient_fill()
-
-                except Exception as exception:
-                    traceback.print_exc(exception)
-                finally:
-                    if self.svg.is_stencil_enabled():
-                        glDisable(GL_STENCIL_TEST)
-            if self.outline:
-                self._render_stroke()
-
     def on_render(self):
         """Render immediately to screen (no display list). Slow! Consider
         using SVG.draw(...) instead."""
@@ -367,7 +299,7 @@ class SVGPath(SVGRenderableElement):
                         self._render_gradient_fill()
                 except Exception as exception:
                     traceback.print_exc(exception)
-            if self.outline:
+            if self.outlines:
                 self._render_stroke()
 
 

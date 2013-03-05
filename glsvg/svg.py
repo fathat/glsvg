@@ -30,7 +30,7 @@ from gradient import *
 
 from svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse
 from svg_pattern import *
-
+import graphics
 
 class SVGConfig:
     """Configuration for how to render SVG objects, such as
@@ -124,21 +124,6 @@ class SVGDoc(object):
     def get_path_by_id(self, id):
         """Returns a path for the given id, or key error"""
         return self.path_lookup[id]
-
-    def _next_stencil_mask(self):
-        self._stencil_mask += 1
-
-        # if we run out of unique bits in stencil buffer,
-        # clear stencils and restart
-        if self._stencil_mask > (2**self.config.stencil_bits-1):
-            self._stencil_mask = 1
-            gl.glStencilMask(0xFF)
-            gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
-        return self._stencil_mask
-
-    def is_stencil_enabled(self):
-        """Indicates if this svg document will use the stencil buffer for rendering"""
-        return self.config.allow_stencil
 
     def _register_pattern_part(self, pattern_id, pattern_svg_path):
         print "registering pattern"
@@ -241,29 +226,18 @@ class SVGDoc(object):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-        #clear out stencils
-        if self.is_stencil_enabled():
-            gl.glStencilMask(0xFF)
-            gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
-
         for pattern in self.patterns.values():
             pattern.render()
-
-    def _clear_stencils(self):
-        gl.glStencilMask(0xFF)
-        gl.glClear(gl.GL_STENCIL_BUFFER_BIT)
 
     def render(self):
         """Render the SVG file without any display lists or transforms. Use draw instead. """
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-        #glEnable(GL_DEPTH_TEST)
+
+        graphics.clear_stats()
         #clear out stencils
-        if self.is_stencil_enabled():
-            self._clear_stencils()
         for svg_path in self._paths:
-            #if not svg_path.is_pattern and not svg_path.is_pattern_part and not svg_path.is_def:
-                svg_path.render()
+            svg_path.render()
 
     def _parse_doc(self):
         self._paths = []

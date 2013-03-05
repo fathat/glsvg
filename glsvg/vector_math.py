@@ -180,8 +180,25 @@ def svg_matrix_to_gl_matrix(matrix):
 
 class BoundingBox:
 
-    def __init__(self, point_cloud):
-        pass
+    def __init__(self, point_cloud=None):
+        self.min_x = None
+        self.max_x = None
+        self.min_y = None
+        self.max_y = None
+        if point_cloud:
+            self.expand(point_cloud)
 
     def expand(self, points):
-        pass
+        for p in points:
+            x, y = p[0], p[1]
+            if self.min_x is None or x < self.min_x:
+                self.min_x = x
+            if self.min_y is None or y < self.min_y:
+                self.min_y = y
+            if self.max_x is None or x > self.max_x:
+                self.max_x = x
+            if self.max_y is None or y > self.max_y:
+                self.max_y = y
+
+    def extents(self):
+        return self.min_x, self.min_y, self.max_x, self.max_y
