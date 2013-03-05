@@ -56,7 +56,7 @@ class SVGConfig:
         self.tolerance = TOLERANCE
 
     def super_detailed(self):
-        """Returns a much more detailed copy of this config"""
+        """Returns a much more detailed copy of this config, for patterns"""
 
         cfg = SVGConfig()
         cfg.bezier_points *= 10
@@ -100,9 +100,17 @@ class SVGDoc(object):
         else:
             self.config = config
         self._stencil_mask = 0
+
+        #: Number of triangles in document
         self.n_tris = 0
+
+        #: Number of lines in document
         self.n_lines = 0
+
+        #: Map from id to path
         self.path_lookup = {}
+
+        #: SVG paths
         self._paths = []
 
         #: Maps from pattern id to pattern
@@ -111,6 +119,7 @@ class SVGDoc(object):
         #: Maps from id to path definition
         self.defs = {}
 
+        #: Filename of original SVG file
         self.filename = filename
         self._gradients = GradientContainer()
         self._generate_disp_list()
@@ -247,10 +256,6 @@ class SVGDoc(object):
         #measurement (right now it adds a zero)
         wm = self.tree._root.get("width", '0')
         hm = self.tree._root.get("height", '0')
-        if 'cm' in wm:
-            wm = wm.replace('cm', '0')
-        if 'cm' in hm:
-            hm = hm.replace('cm', '0')
 
         self.width = parse_float(wm)
         self.height = parse_float(hm)

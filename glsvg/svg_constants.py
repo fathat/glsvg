@@ -1,13 +1,22 @@
+#: Number of points used to define a bezier curve
 BEZIER_POINTS = 12
+
+#: Number of points used to define a circle
 CIRCLE_POINTS = 48
+
+#: Distance under which neighboring points may merge
 TOLERANCE = 0.1
 
+#: Default fill color (as per svg spec)
 DEFAULT_FILL = [0, 0, 0, 255]
+
+#: Default fill stroke (as per svg spec)
 DEFAULT_STROKE = None
 
+#: Size of the texture to render patterns into
 PATTERN_TEX_SIZE = 1024
 
-# svg namespace
+#: svg namespace
 XMLNS = 'http://www.w3.org/2000/svg'
 
 #: All possible color names in SVG as hex
