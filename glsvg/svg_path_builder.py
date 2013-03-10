@@ -14,10 +14,17 @@ PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 
 
 class SVGPathBuilder(object):
+
+    def __init__(self):
+        pass
+
+    def read_xml_svg_element(self, path, element, config):
+        pass
+
     def __init__(self, path, element, config):
         self._bezier_coefficients = []
-        self.ctx_cursor_x = 0
-        self.ctx_cursor_y = 0
+        self.cursor_x = 0
+        self.cursor_y = 0
         self.close_index = 0
         self.ctx_path = []
         self.ctx_loop = []
@@ -28,20 +35,39 @@ class SVGPathBuilder(object):
         e = element
         if e.tag.endswith('path'):
             self.shape = path.shape = 'path'
-            self._read_path_commands(e, path)
+            self._read_path_commands(e)
         elif e.tag.endswith('rect'):
             self.shape = path.shape = 'rect'
             x = parse_float(e.get('x', '0'))
             y = parse_float(e.get('y', '0'))
             h = parse_float(e.get('height'))
             w = parse_float(e.get('width'))
+
+            rx = parse_float(e.get('rx', '0'))
+            ry = parse_float(e.get('ry', str(rx)))
             path.x, path.y, path.w, path.h = x, y, w, h
-            self._set_cursor_position(x, y)
-            self._line_to(x + w, y)
-            self._line_to(x + w, y + h)
-            self._line_to(x, y + h)
-            self._line_to(x, y)
-            self._end_path()
+
+            if rx == 0 and ry ==0:
+                # no rounding, so just draw a simple rectangle
+                self.set_cursor_position(x, y)
+                self.line_to(x + w, y)
+                self.line_to(x + w, y + h)
+                self.line_to(x, y + h)
+                self.line_to(x, y)
+                self.end_path()
+            else:
+                # rounded rectangle, do some stuff with arcs
+                self.set_cursor_position(x, y + ry)
+                self.arc_to(rx, ry, 0, 0, 1, x + rx, y)
+                self.line_to(x + (w - rx), y)
+                self.arc_to(rx, ry, 0, 0, 1, x + w, y + ry)
+                self.line_to(x + w, y + (h - ry))
+                self.arc_to(rx, ry, 0, 0, 1, x + (w - rx), y+h)
+                self.line_to(x + rx, y + h)
+                self.arc_to(rx, ry, 0, 0, 1, x, y + (h - ry))
+                self.line_to(x, y + ry)
+                self.end_path()
+
         elif e.tag.endswith('polyline') or e.tag.endswith('polygon'):
             if e.tag.endswith('polyline'):
                 self.shape = path.shape = 'polyline'
@@ -53,10 +79,10 @@ class SVGPathBuilder(object):
             def next_point():
                 return float(path_data.pop(0)), float(path_data.pop(0))
             while path_data:
-                self._line_to(*next_point())
+                self.line_to(*next_point())
             if e.tag.endswith('polygon'):
-                self._close_path()
-            self._end_path()
+                self.close_path()
+            self.end_path()
         elif e.tag.endswith('line'):
             self.shape = path.shape = 'line'
             x1 = float(e.get('x1'))
@@ -64,9 +90,9 @@ class SVGPathBuilder(object):
             x2 = float(e.get('x2'))
             y2 = float(e.get('y2'))
             path.x1, path.x1, path.x2, path.y2 = x1, y1, x2, y2
-            self._set_cursor_position(x1, y1)
-            self._line_to(x2, y2)
-            self._end_path()
+            self.set_cursor_position(x1, y1)
+            self.line_to(x2, y2)
+            self.end_path()
         elif e.tag.endswith('circle'):
             self.shape = path.shape = 'circle'
             cx = float(e.get('cx'))
@@ -75,9 +101,9 @@ class SVGPathBuilder(object):
             path.cx, path.cy, path.r = cx, cy, r
             for i in xrange(config.circle_points):
                 theta = 2 * i * math.pi / config.circle_points
-                self._line_to(cx + r * math.cos(theta), cy + r * math.sin(theta))
-            self._close_path()
-            self._end_path()
+                self.line_to(cx + r * math.cos(theta), cy + r * math.sin(theta))
+            self.close_path()
+            self.end_path()
         elif e.tag.endswith('ellipse'):
             self.shape = path.shape = 'ellipse'
             cx = float(e.get('cx'))
@@ -87,21 +113,21 @@ class SVGPathBuilder(object):
             path.cx, path.cy, path.rx, path.ry = cx, cy, rx, ry
             for i in xrange(config.circle_points):
                 theta = 2 * i * math.pi / config.circle_points
-                self._line_to(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
-            self._close_path()
-            self._end_path()
+                self.line_to(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
+            self.close_path()
+            self.end_path()
 
-    def _close_path(self):
+    def close_path(self):
         self.ctx_loop.append(self.ctx_loop[0][:])
         self.ctx_path.append(self.ctx_loop)
         self.ctx_loop = []
 
-    def _set_cursor_position(self, x, y):
-        self.ctx_cursor_x = x
-        self.ctx_cursor_y = y
+    def set_cursor_position(self, x, y):
+        self.cursor_x = x
+        self.cursor_y = y
         self.ctx_loop.append([x, y])
 
-    def _read_path_commands(self, e, scope):
+    def _read_path_commands(self, e):
         path_data = e.get('d', '')
         path_data = PATH_CMD_RE.findall(path_data)
 
@@ -117,100 +143,100 @@ class SVGPathBuilder(object):
                 opcode = prev_opcode
 
             if opcode == 'M':
-                self._set_cursor_position(*next_point())
+                self.set_cursor_position(*next_point())
             elif opcode == 'm':
                 mx, my = next_point()
-                self._set_cursor_position(self.ctx_cursor_x + mx, self.ctx_cursor_y + my)
+                self.set_cursor_position(self.cursor_x + mx, self.cursor_y + my)
             elif opcode == 'Q':  # absolute quadratic curve
-                self._quadratic_curve_to(*(next_point() + next_point()))
+                self.quadratic_curve_to(*(next_point() + next_point()))
             elif opcode == 'q':  # relative quadratic curve
                 ax, ay = next_point()
                 bx, by = next_point()
-                self._quadratic_curve_to(
-                    ax + self.ctx_cursor_x, ay + self.ctx_cursor_y,
-                    bx + self.ctx_cursor_x, by + self.ctx_cursor_y)
+                self.quadratic_curve_to(
+                    ax + self.cursor_x, ay + self.cursor_y,
+                    bx + self.cursor_x, by + self.cursor_y)
 
             elif opcode == 'T':
                 # quadratic curve with control point as reflection
-                mx = 2 * self.ctx_cursor_x - self.last_cx
-                my = 2 * self.ctx_cursor_y - self.last_cy
+                mx = 2 * self.cursor_x - self.last_cx
+                my = 2 * self.cursor_y - self.last_cy
                 x, y = next_point()
-                self._quadratic_curve_to(mx, my, x, y)
+                self.quadratic_curve_to(mx, my, x, y)
 
             elif opcode == 't':
                 # relative quadratic curve with control point as reflection
-                mx = 2 * self.ctx_cursor_x - self.last_cx
-                my = 2 * self.ctx_cursor_y - self.last_cy
+                mx = 2 * self.cursor_x - self.last_cx
+                my = 2 * self.cursor_y - self.last_cy
                 x, y = next_point()
-                self._quadratic_curve_to(
-                    mx + self.ctx_cursor_x,
-                    my + self.ctx_cursor_y,
-                    x + self.ctx_cursor_x,
-                    y + self.ctx_cursor_y)
+                self.quadratic_curve_to(
+                    mx + self.cursor_x,
+                    my + self.cursor_y,
+                    x + self.cursor_x,
+                    y + self.cursor_y)
 
             elif opcode == 'C':
-                self._curve_to(*(next_point() + next_point() + next_point()))
+                self.curve_to(*(next_point() + next_point() + next_point()))
             elif opcode == 'c':
-                mx, my = self.ctx_cursor_x, self.ctx_cursor_y
+                mx, my = self.cursor_x, self.cursor_y
                 x1, y1 = next_point()
                 x2, y2 = next_point()
                 x, y = next_point()
 
-                self._curve_to(mx + x1, my + y1, mx + x2, my + y2, mx + x, my + y)
+                self.curve_to(mx + x1, my + y1, mx + x2, my + y2, mx + x, my + y)
             elif opcode == 'S':
-                self._curve_to(2 * self.ctx_cursor_x - self.last_cx, 2 * self.ctx_cursor_y - self.last_cy,
+                self.curve_to(2 * self.cursor_x - self.last_cx, 2 * self.cursor_y - self.last_cy,
                                *(next_point() + next_point()))
             elif opcode == 's':
-                mx = self.ctx_cursor_x
-                my = self.ctx_cursor_y
-                x1, y1 = 2 * self.ctx_cursor_x - self.last_cx, 2 * self.ctx_cursor_y - self.last_cy
+                mx = self.cursor_x
+                my = self.cursor_y
+                x1, y1 = 2 * self.cursor_x - self.last_cx, 2 * self.cursor_y - self.last_cy
                 x2, y2 = next_point()
                 x, y = next_point()
 
-                self._curve_to(x1, y1, mx + x2, my + y2, mx + x, my + y)
+                self.curve_to(x1, y1, mx + x2, my + y2, mx + x, my + y)
             elif opcode == 'A':
                 rx, ry = next_point()
                 phi = float(path_data.pop(0))
                 large_arc = int(path_data.pop(0))
                 sweep = int(path_data.pop(0))
                 x, y = next_point()
-                self._arc_to(rx, ry, phi, large_arc, sweep, x, y)
+                self.arc_to(rx, ry, phi, large_arc, sweep, x, y)
             elif opcode == 'a':  # relative arc
                 rx, ry = next_point()
                 phi = float(path_data.pop(0))
                 large_arc = int(path_data.pop(0))
                 sweep = int(path_data.pop(0))
                 x, y = next_point()
-                self._arc_to(rx, ry, phi, large_arc, sweep, self.ctx_cursor_x + x, self.ctx_cursor_y + y)
+                self.arc_to(rx, ry, phi, large_arc, sweep, self.cursor_x + x, self.cursor_y + y)
             elif opcode in 'zZ':
-                self._close_path()
+                self.close_path()
             elif opcode == 'L':
-                self._line_to(*next_point())
+                self.line_to(*next_point())
             elif opcode == 'l':
                 x, y = next_point()
-                self._line_to(self.ctx_cursor_x + x, self.ctx_cursor_y + y)
+                self.line_to(self.cursor_x + x, self.cursor_y + y)
             elif opcode == 'H':
                 x = float(path_data.pop(0))
-                self._line_to(x, self.ctx_cursor_y)
+                self.line_to(x, self.cursor_y)
             elif opcode == 'h':
                 x = float(path_data.pop(0))
-                self._line_to(self.ctx_cursor_x + x, self.ctx_cursor_y)
+                self.line_to(self.cursor_x + x, self.cursor_y)
             elif opcode == 'V':
                 y = float(path_data.pop(0))
-                self._line_to(self.ctx_cursor_x, y)
+                self.line_to(self.cursor_x, y)
             elif opcode == 'v':
                 y = float(path_data.pop(0))
-                self._line_to(self.ctx_cursor_x, self.ctx_cursor_y + y)
+                self.line_to(self.cursor_x, self.cursor_y + y)
             else:
                 self._warn("Unrecognised opcode: " + opcode)
                 raise Exception("Unrecognised opcode: " + opcode)
-        self._end_path()
+        self.end_path()
 
-    def _arc_to(self, rx, ry, phi, large_arc, sweep, x, y):
+    def arc_to(self, rx, ry, phi, large_arc, sweep, x, y):
         # This function is made out of magical fairy dust
         # http://www.w3.org/TR/2003/REC-SVG11-20030114/implnote.html#ArcImplementationNotes
-        x1 = self.ctx_cursor_x
-        y1 = self.ctx_cursor_y
+        x1 = self.cursor_x
+        y1 = self.cursor_y
         x2 = x
         y2 = y
         cp = math.cos(phi)
@@ -248,11 +274,11 @@ class SVGPathBuilder(object):
             theta = psi + i * delta / n_points
             ct = math.cos(theta)
             st = math.sin(theta)
-            self._line_to(cp * rx * ct - sp * ry * st + cx,
+            self.line_to(cp * rx * ct - sp * ry * st + cx,
                           sp * rx * ct + cp * ry * st + cy)
 
-    def _quadratic_curve_to(self, x1, y1, x2, y2):
-        x0, y0 = self.ctx_cursor_x, self.ctx_cursor_y
+    def quadratic_curve_to(self, x1, y1, x2, y2):
+        x0, y0 = self.cursor_x, self.cursor_y
         n_bezier_points = self.config.bezier_points
         for i in xrange(n_bezier_points+1):
             t = float(i) / n_bezier_points
@@ -268,9 +294,9 @@ class SVGPathBuilder(object):
             self.ctx_loop.append([bx, by])
 
         self.last_cx, self.last_cy = x1, y1
-        self.ctx_cursor_x, self.ctx_cursor_y = x2, y2
+        self.cursor_x, self.cursor_y = x2, y2
 
-    def _curve_to(self, x1, y1, x2, y2, x, y):
+    def curve_to(self, x1, y1, x2, y2, x, y):
         n_bezier_points = self.config.bezier_points
         if not self._bezier_coefficients:
             for i in xrange(n_bezier_points + 1):
@@ -283,16 +309,16 @@ class SVGPathBuilder(object):
         self.last_cx = x2
         self.last_cy = y2
         for i, t in enumerate(self._bezier_coefficients):
-            px = t[0] * self.ctx_cursor_x + t[1] * x1 + t[2] * x2 + t[3] * x
-            py = t[0] * self.ctx_cursor_y + t[1] * y1 + t[2] * y2 + t[3] * y
+            px = t[0] * self.cursor_x + t[1] * x1 + t[2] * x2 + t[3] * x
+            py = t[0] * self.cursor_y + t[1] * y1 + t[2] * y2 + t[3] * y
             self.ctx_loop.append([px, py])
 
-        self.ctx_cursor_x, self.ctx_cursor_y = px, py
+        self.cursor_x, self.cursor_y = px, py
 
-    def _line_to(self, x, y):
-        self._set_cursor_position(x, y)
+    def line_to(self, x, y):
+        self.set_cursor_position(x, y)
 
-    def _end_path(self):
+    def end_path(self):
         self.ctx_path.append(self.ctx_loop)
         if self.ctx_path:
             path = []
@@ -308,6 +334,8 @@ class SVGPathBuilder(object):
             self.path = path if self.renderable.style.stroke else None
             self.polygon = self._triangulate(path, self.renderable.style.fill_rule) if self.renderable.style.fill else None
         self.ctx_path = []
+
+        return self.path, self.polygon
 
     def _triangulate(self, looplist, fill_rule):
         if self.shape in ['line']:
