@@ -166,7 +166,9 @@ class SVGPath(SVGRenderableElement):
         #: The bounding box
         self._bounding_box = None
 
-        path_builder = SVGPathBuilder(
+        path_builder = SVGPathBuilder()
+
+        path_builder.read_xml_svg_element(
                         self,
                         element,
                         self.config)
@@ -299,9 +301,8 @@ class SVGPath(SVGRenderableElement):
                         self._render_gradient_fill()
                 except Exception as exception:
                     traceback.print_exc(exception)
-            if self.outlines:
+            if self.style.stroke and self.outlines:
                 self._render_stroke()
-
 
     def __repr__(self):
         return "<SVGPath id=%s title='%s' description='%s' transform=%s>" % (

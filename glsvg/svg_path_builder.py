@@ -8,6 +8,7 @@ from svg_constants import *
 from svg_parser_utils import *
 from vector_math import Matrix
 import svg_style
+import svg_constants
 
 POINT_RE = re.compile("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
@@ -15,22 +16,34 @@ PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 
 class SVGPathBuilder(object):
 
-    def __init__(self):
-        pass
-
-    def read_xml_svg_element(self, path, element, config):
-        pass
-
-    def __init__(self, path, element, config):
+    def __init__(self, fill_rule='nonzero'):
         self._bezier_coefficients = []
         self.cursor_x = 0
         self.cursor_y = 0
         self.close_index = 0
         self.ctx_path = []
         self.ctx_loop = []
-        self.config = config
         self.shape = None
-        self.renderable = path
+        self.fill_rule = fill_rule
+        self.n_bezier_points = svg_constants.BEZIER_POINTS
+        self.n_circle_points = svg_constants.CIRCLE_POINTS
+        self.tolerance = svg_constants.TOLERANCE
+        self.fill_rule = fill_rule
+
+    def read_xml_svg_element(self, path, element, config):
+        self._bezier_coefficients = []
+        self.cursor_x = 0
+        self.cursor_y = 0
+        self.close_index = 0
+        self.ctx_path = []
+        self.ctx_loop = []
+        self.shape = None
+        self.n_bezier_points = config.bezier_points
+        self.n_circle_points = config.circle_points
+        self.tolerance = config.tolerance
+        self.fill_rule = None
+        if path.style.fill:
+            self.fill_rule = path.style.fill_rule
 
         e = element
         if e.tag.endswith('path'):
@@ -47,7 +60,7 @@ class SVGPathBuilder(object):
             ry = parse_float(e.get('ry', str(rx)))
             path.x, path.y, path.w, path.h = x, y, w, h
 
-            if rx == 0 and ry ==0:
+            if rx == 0 and ry == 0:
                 # no rounding, so just draw a simple rectangle
                 self.set_cursor_position(x, y)
                 self.line_to(x + w, y)
@@ -268,19 +281,19 @@ class SVGPathBuilder(object):
             delta += math.pi * 2
         if not sweep and delta > 0:
             delta -= math.pi * 2
-        n_points = max(int(abs(self.config.circle_points * delta / (2 * math.pi))), 1)
+        n_points = max(int(abs(self.n_circle_points * delta / (2 * math.pi))), 1)
 
         for i in xrange(n_points + 1):
             theta = psi + i * delta / n_points
             ct = math.cos(theta)
             st = math.sin(theta)
             self.line_to(cp * rx * ct - sp * ry * st + cx,
-                          sp * rx * ct + cp * ry * st + cy)
+                         sp * rx * ct + cp * ry * st + cy)
 
     def quadratic_curve_to(self, x1, y1, x2, y2):
         x0, y0 = self.cursor_x, self.cursor_y
-        n_bezier_points = self.config.bezier_points
-        for i in xrange(n_bezier_points+1):
+        n_bezier_points = self.n_bezier_points
+        for i in xrange(n_bezier_points + 1):
             t = float(i) / n_bezier_points
             q0x = (x1 - x0) * t + x0
             q0y = (y1 - y0) * t + y0
@@ -288,8 +301,8 @@ class SVGPathBuilder(object):
             q1x = (x2 - x1) * t + x1
             q1y = (y2 - y1) * t + y1
 
-            bx = (q1x-q0x) * t + q0x
-            by = (q1y-q0y) * t + q0y
+            bx = (q1x - q0x) * t + q0x
+            by = (q1y - q0y) * t + q0y
 
             self.ctx_loop.append([bx, by])
 
@@ -297,7 +310,7 @@ class SVGPathBuilder(object):
         self.cursor_x, self.cursor_y = x2, y2
 
     def curve_to(self, x1, y1, x2, y2, x, y):
-        n_bezier_points = self.config.bezier_points
+        n_bezier_points = self.n_bezier_points
         if not self._bezier_coefficients:
             for i in xrange(n_bezier_points + 1):
                 t = float(i) / n_bezier_points
@@ -327,12 +340,12 @@ class SVGPathBuilder(object):
                     continue
                 loop = [orig_loop[0]]
                 for pt in orig_loop:
-                    if (pt[0] - loop[-1][0])**2 + (pt[1] - loop[-1][1])**2 > self.config.tolerance:
+                    if (pt[0] - loop[-1][0]) ** 2 + (pt[1] - loop[-1][1])**2 > self.tolerance:
                         loop.append(pt)
                 path.append(loop)
 
-            self.path = path if self.renderable.style.stroke else None
-            self.polygon = self._triangulate(path, self.renderable.style.fill_rule) if self.renderable.style.fill else None
+            self.path = path
+            self.polygon = self._triangulate(path, self.fill_rule) if self.fill_rule else None
         self.ctx_path = []
 
         return self.path, self.polygon
