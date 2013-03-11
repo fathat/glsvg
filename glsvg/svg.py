@@ -291,7 +291,7 @@ class SVGDoc(object):
                 self.path_lookup[renderable.id] = renderable
         elif e.tag.endswith('}g'):
             renderable = SVGGroup(self, e, parent)
-            if not parent:
+            if not parent and not renderable.is_def:
                 self._paths.append(renderable)
         elif e.tag.endswith("text"):
             self._warn("Text tag not supported")

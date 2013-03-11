@@ -155,6 +155,10 @@ class Matrix(object):
     def identity(cls):
         return Matrix([1, 0, 0, 1, 0, 0])
 
+    @classmethod
+    def translation(cls, x, y):
+        return Matrix([1, 0, 0, 1, x, y])
+
     def inverse(self):
         d = float(self.values[0] * self.values[3] - self.values[1] * self.values[2])
         return Matrix([self.values[3] / d, -self.values[1] / d, -self.values[2] / d, self.values[0] / d,

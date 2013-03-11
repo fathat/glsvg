@@ -6,7 +6,9 @@ import graphics
 import lines
 import traceback
 
+from svg_parser_utils import parse_float
 from svg_path_builder import SVGPathBuilder
+
 from glutils import DisplayListGenerator
 import svg_style
 from vector_math import Matrix, BoundingBox
@@ -106,6 +108,10 @@ class SVGUse(SVGRenderableElement):
         SVGRenderableElement.__init__(self, svg, element, parent)
         self.svg = svg
         self.target = element.get(XLINK_NS + "href", None)
+        self.x = parse_float(element.get('x', '0'))
+        self.y = parse_float(element.get('y', '0'))
+
+        self.transform = self.transform * Matrix.translation(self.x, self.y)
 
         #clip off "#"
         if self.target:
