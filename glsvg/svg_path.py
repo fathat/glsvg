@@ -264,7 +264,7 @@ class SVGPath(SVGRenderableElement):
                     end_point = vec2(loop_plus[0])
                     almost_end_point = vec2(loop_plus[1])
                     marker = self.svg.defs[self.marker_start]
-                    self._render_marker(end_point, almost_end_point, marker)
+                    self._render_marker(end_point, almost_end_point, marker, True)
                 if self.marker_end:
                     end_point = vec2(loop_plus[-1])
                     almost_end_point = vec2(loop_plus[-2])
@@ -284,18 +284,21 @@ class SVGPath(SVGRenderableElement):
                     end_point = vec2(loop_plus[0])
                     almost_end_point = vec2(loop_plus[1])
                     marker = self.svg.defs[self.marker_start]
-                    self._render_marker(end_point, almost_end_point, marker)
+                    self._render_marker(end_point, almost_end_point, marker, True)
                 if self.marker_end:
                     end_point = vec2(loop_plus[-1])
                     almost_end_point = vec2(loop_plus[-2])
                     marker = self.svg.defs[self.marker_end]
                     self._render_marker(end_point, almost_end_point, marker)
 
-    def _render_marker(self, a, b, marker):
+    def _render_marker(self, a, b, marker, reverse=False):
         if marker.orient == 'auto':
             angle = (a - b).angle()
         else:
             angle = marker.orient
+
+        if reverse:
+            angle += math.pi
 
         sx = (marker.marker_width / marker.vb_w) * self.style.stroke_width
         sy = (marker.marker_height / marker.vb_h) * self.style.stroke_width
