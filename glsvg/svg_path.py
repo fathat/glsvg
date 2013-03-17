@@ -109,9 +109,16 @@ class SVGMarker(SVGRenderableElement):
         self.ref_x = parse_float(element.get('refX', '0'))
         self.ref_y = parse_float(element.get('refY', '0'))
 
-        x, y, w, h = (parse_float(x) for x in parse_list(element.get("viewBox")))
+        vb = element.get('viewBox', None)
 
-        self.vb_x, self.vb_y, self.vb_w, self.vb_h = x, y, w, h
+        if vb:
+            x, y, w, h = (parse_float(x) for x in parse_list(element.get("viewBox")))
+            self.vb_x, self.vb_y, self.vb_w, self.vb_h = x, y, w, h
+        else:
+            self.vb_x = 0
+            self.vb_y = 0
+            self.vb_w = 1
+            self.vb_h = 1
 
 
 XLINK_NS = "{http://www.w3.org/1999/xlink}"
@@ -274,14 +281,16 @@ class SVGPath(SVGRenderableElement):
                     self._render_marker(end_point, almost_end_point, marker)
 
     def _render_marker(self, a, b, marker):
-        angle = (a - b).angle()
+        if marker.orient == 'auto':
+            angle = (a - b).angle()
+        else:
+            angle = marker.orient
 
         sx = (marker.marker_width / marker.vb_w) * self.style.stroke_width
         sy = (marker.marker_height / marker.vb_h) * self.style.stroke_width
 
         rx = marker.ref_x
         ry = marker.ref_y
-
 
         with Matrix.transform(a.x, a.y, theta=angle):
             with Matrix.scale(sx, sy):
