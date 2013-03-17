@@ -6,7 +6,7 @@ import graphics
 import lines
 import traceback
 
-from svg_parser_utils import parse_float, parse_list
+from svg_parser_utils import parse_float, parse_list, get_fns
 from svg_path_builder import SVGPathBuilder
 
 from glutils import DisplayListGenerator
@@ -15,14 +15,31 @@ from vector_math import Matrix, BoundingBox, vec2
 from svg_constants import XMLNS
 
 
-class SVGRenderableElement(object):
+class SVGContainer(object):
+
+    def __init__(self, parent):
+
+        self.parent = parent
+
+        self.children = []
+
+        self.is_def = False
+
+        if parent:
+            parent.add_child(self)
+
+    def add_child(self, child):
+        self.children.append(child)
+
+
+class SVGRenderableElement(SVGContainer):
 
     def __init__(self, svg, element, parent):
+
         #: The id of the element
         self.id = element.get('id', '')
 
-        #: The parent element
-        self.parent = parent
+        SVGContainer.__init__(self, parent)
 
         #: Is this element a pattern?
         self.is_pattern = element.tag.endswith('pattern')
@@ -31,11 +48,11 @@ class SVGRenderableElement(object):
         self.is_def = False
 
         if parent:
-            parent.add_child(self)
             self.is_def = parent.is_def
 
         #: The element style (possibly with inherited traits from parent style)
-        self.style = svg_style.SVGStyle(parent.style if parent else None)
+        self.style = svg_style.SVGStyle(
+            parent.style if isinstance(parent, SVGRenderableElement) else None)
         self.style.from_element(element)
 
         #: Optional element title
@@ -49,7 +66,7 @@ class SVGRenderableElement(object):
 
         transform_str = element.get('transform', None)
         if transform_str:
-            transforms = transform_str.strip().split(' ')
+            transforms = get_fns(transform_str)
 
             for tstring in transforms:
                 t_acc = t_acc * Matrix(tstring)
@@ -71,7 +88,7 @@ class SVGRenderableElement(object):
     def is_pattern_part(self):
         part = self
         while part:
-            if part.is_pattern:
+            if isinstance(part, SVGRenderableElement) and part.is_pattern:
                 return True
             part = part.parent
         return False
@@ -87,10 +104,11 @@ class SVGRenderableElement(object):
         pass
 
     def render(self):
-        self.on_render()
+        with self.transform:
+            self.on_render()
 
-        for c in self.children:
-            c.render()
+            for c in self.children:
+                c.render()
 
 
 class SVGGroup(SVGRenderableElement):
@@ -141,7 +159,7 @@ class SVGUse(SVGRenderableElement):
             self.target = self.target[1:]
 
     def render(self):
-        with self.absolute_transform:
+        with self.transform:
             self.svg.defs[self.target].render()
 
 
@@ -154,7 +172,8 @@ class SVGDefs(SVGRenderableElement):
         self.is_def = True
 
     def add_child(self, child):
-        self.svg.defs[child.id] = child
+        if hasattr(child, 'id'):
+            self.svg.defs[child.id] = child
         self.children.append(child)
 
 
@@ -376,7 +395,7 @@ class SVGPath(SVGRenderableElement):
     def on_render(self):
         """Render immediately to screen (no display list). Slow! Consider
         using SVG.draw(...) instead."""
-        with self.absolute_transform:
+        with self.transform:
             if self.triangles:
                 try:
                     if isinstance(self.style.fill, str) and self.style.fill in self.svg.patterns:

@@ -28,7 +28,7 @@ from vector_math import *
 from svg_parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
 
-from svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse, SVGMarker
+from svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse, SVGMarker, SVGContainer
 from svg_pattern import *
 import graphics
 
@@ -74,7 +74,7 @@ class SVGConfig:
         )
 
 
-class SVGDoc(object):
+class SVGDoc(SVGContainer):
     """
     An SVG image document.
     
@@ -83,7 +83,7 @@ class SVGDoc(object):
     
     """
 
-    def __init__(self, filename, anchor_x=0, anchor_y=0, config=None):
+    def __init__(self, filename_or_element, parent=None, anchor_x=0, anchor_y=0, config=None):
         """Creates an SVG document from a .svg or .svgz file.
 
         Args:
@@ -96,6 +96,9 @@ class SVGDoc(object):
                 The vertical anchor position for scaling and rotations. Defaults to 0. The symbolic 
                 values 'bottom', 'center' and 'top' are also accepted.
         """
+
+        SVGContainer.__init__(self, parent)
+
         if not config:
             self.config = SVGConfig()
         else:
@@ -124,11 +127,102 @@ class SVGDoc(object):
         self.defs = {}
 
         #: Filename of original SVG file
-        self.filename = filename
+        self.filename = filename_or_element if isinstance(filename_or_element, str) else None
         self._gradients = GradientContainer()
-        self._generate_disp_list()
+
         self._anchor_x = anchor_x
         self._anchor_y = anchor_y
+
+        if self.filename:
+            if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08':  # gzip magic numbers
+                import gzip
+                f = gzip.open(self.filename, 'rb')
+            else:
+                f = open(self.filename, 'rb')
+            self.root = parse(f)._root
+        else:
+            self.root = filename_or_element
+
+        self.parse_root(self.root)
+
+        self._generate_disp_list()
+
+    def parse_root(self, root):
+        self._paths = []
+
+        wm = root.get("width", '0')
+        hm = root.get("height", '0')
+
+        self.x = 0
+        self.y = 0
+
+        self.width = parse_float(wm)
+        self.height = parse_float(hm)
+
+        self.preserve_aspect_ratio = root.get('preserveAspectRatio', 'none')
+
+        if self.root.get("viewBox"):
+            x, y, w, h = (parse_float(x) for x in parse_list(root.get("viewBox")))
+            self.x = x
+            self.y = y
+            self.height = h
+            self.width = w
+
+        self.opacity = 1.0
+        for e in root.getchildren():
+            try:
+                self._parse_element(e)
+            except Exception as ex:
+                print 'Exception while parsing element', e
+                raise
+
+    def _is_path_tag(self, e):
+        return (e.tag.endswith('path')
+                or e.tag.endswith('rect')
+                or e.tag.endswith('polyline') or e.tag.endswith('polygon')
+                or e.tag.endswith('line')
+                or e.tag.endswith('circle') or e.tag.endswith('ellipse'))
+
+    def _parse_element(self, e, parent=None):
+        renderable = None
+        if self._is_path_tag(e):
+            renderable = SVGPath(self, e, parent)
+            if not parent:
+                self._paths.append(renderable)
+
+            if renderable.id:
+                self.path_lookup[renderable.id] = renderable
+        elif e.tag.endswith('}g'):
+            renderable = SVGGroup(self, e, parent)
+            if not parent and not renderable.is_def:
+                self._paths.append(renderable)
+        elif e.tag.endswith('svg'):
+            renderable = SVGDoc(e, parent)
+            self._paths.append(renderable)
+        elif e.tag.endswith('marker'):
+            renderable = SVGMarker(self, e, parent)
+        elif e.tag.endswith("text"):
+            self._warn("Text tag not supported")
+        elif e.tag.endswith('linearGradient'):
+            self._gradients[e.get('id')] = LinearGradient(e, self)
+        elif e.tag.endswith('radialGradient'):
+            self._gradients[e.get('id')] = RadialGradient(e, self)
+        elif e.tag.endswith('pattern'):
+            renderable = SVGPattern(self, e, parent)
+            self.patterns[e.get('id')] = renderable
+        elif e.tag.endswith('defs'):
+            renderable = SVGDefs(self, e, parent)
+        elif e.tag.endswith('marker'):
+            renderable = SVGMarker(self, e, parent)
+        elif e.tag.endswith('use'):
+            renderable = SVGUse(self, e, parent)
+        for c in e.getchildren():
+            try:
+                self._parse_element(c, renderable)
+            except Exception, ex:
+                print 'Exception while parsing element', c
+                raise
+
 
     def get_path_ids(self):
         """Returns all the path ids"""
@@ -177,13 +271,6 @@ class SVGDoc(object):
     anchor_y = property(_get_anchor_y, _set_anchor_y)
     
     def _generate_disp_list(self):
-        if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08':  # gzip magic numbers
-            import gzip
-            f = gzip.open(self.filename, 'rb')
-        else:
-            f = open(self.filename, 'rb')
-        self.tree = parse(f)
-        self._parse_doc()
 
         # prepare all the patterns
         self.prerender_patterns()
@@ -249,77 +336,9 @@ class SVGDoc(object):
 
         graphics.clear_stats()
         #clear out stencils
-        for svg_path in self._paths:
-            svg_path.render()
-
-    def _parse_doc(self):
-        self._paths = []
-
-        # get the height measurement... if it ends
-        # with "cm" just sort of fake out some sort of
-        # measurement (right now it adds a zero)
-        wm = self.tree._root.get("width", '0')
-        hm = self.tree._root.get("height", '0')
-
-        self.width = parse_float(wm)
-        self.height = parse_float(hm)
-
-        if self.tree._root.get("viewBox"):
-            x, y, w, h = (parse_float(x) for x in parse_list(self.tree._root.get("viewBox")))
-            self.height = h
-            self.width = w
-
-        self.opacity = 1.0
-        for e in self.tree._root.getchildren():
-            try:
-                self._parse_element(e)
-            except Exception as ex:
-                print 'Exception while parsing element', e
-                raise
-
-    def _is_path_tag(self, e):
-        return (e.tag.endswith('path')
-                or e.tag.endswith('rect')
-                or e.tag.endswith('polyline') or e.tag.endswith('polygon')
-                or e.tag.endswith('line')
-                or e.tag.endswith('circle') or e.tag.endswith('ellipse'))
-
-    def _parse_element(self, e, parent=None):
-        renderable = None
-        if self._is_path_tag(e):
-            renderable = SVGPath(self, e, parent)
-            if not parent:
-                self._paths.append(renderable)
-
-            if renderable.id:
-                self.path_lookup[renderable.id] = renderable
-        elif e.tag.endswith('}g'):
-            renderable = SVGGroup(self, e, parent)
-            if not parent and not renderable.is_def:
-                self._paths.append(renderable)
-        elif e.tag.endswith('marker'):
-            renderable = SVGMarker(self, e, parent)
-        elif e.tag.endswith("text"):
-            self._warn("Text tag not supported")
-        elif e.tag.endswith('linearGradient'):
-            self._gradients[e.get('id')] = LinearGradient(e, self)
-        elif e.tag.endswith('radialGradient'):
-            self._gradients[e.get('id')] = RadialGradient(e, self)
-        elif e.tag.endswith('pattern'):
-            renderable = SVGPattern(self, e, parent)
-            self.patterns[e.get('id')] = renderable
-        elif e.tag.endswith('defs'):
-            renderable = SVGDefs(self, e, parent)
-        elif e.tag.endswith('marker'):
-            pass
-        elif e.tag.endswith('use'):
-            renderable = SVGUse(self, e, parent)
-        for c in e.getchildren():
-            try:
-                self._parse_element(c, renderable)
-            except Exception, ex:
-                print 'Exception while parsing element', c
-                raise
+        with Matrix.translation(self.x, self.y):
+            for svg_path in self._paths:
+                svg_path.render()
 
     def _warn(self, message):
         print "Warning: SVG Parser (%s) - %s" % (self.filename, message)

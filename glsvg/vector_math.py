@@ -113,10 +113,10 @@ class Matrix(object):
             elif string.startswith('translate('):
                 args = [float(x) for x in parse_list(string[10:-1])]
 
-                if len(args) == 2:
-                    self.values = [1, 0, 0, 1, args[0], args[1]]
-                else:
-                    self.values = [1, 0, 0, 1, args[0], 0]
+                #if len(args) == 2:
+                self.values = [1, 0, 0, 1, args[0], args[1]]
+                #else:
+                #    self.values = [1, 0, 0, 1, args[0], 0]
             elif string.startswith('scale('):
                 inside = string[6:-1]
                 scale_vars = [float(x) for x in parse_float_list(inside)]
