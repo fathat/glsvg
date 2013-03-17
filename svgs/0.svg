@@ -1,93 +1,84 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="4in"
-   height="2in"
-   viewBox="0 0 4000 2000"
-   version="1.1"
-   id="svg2"
-   inkscape:version="0.47 r22583"
-   sodipodi:docname="0.svg">
-  <metadata
-     id="metadata17">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <sodipodi:namedview
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1"
-     objecttolerance="10"
-     gridtolerance="10"
-     guidetolerance="10"
-     inkscape:pageopacity="0"
-     inkscape:pageshadow="2"
-     inkscape:window-width="894"
-     inkscape:window-height="657"
-     id="namedview15"
-     showgrid="false"
-     inkscape:zoom="1.3111111"
-     inkscape:cx="180"
-     inkscape:cy="90"
-     inkscape:window-x="518"
-     inkscape:window-y="356"
-     inkscape:window-maximized="0"
-     inkscape:current-layer="svg2" />
-  <defs
-     id="defs4">
-    <inkscape:perspective
-       sodipodi:type="inkscape:persp3d"
-       inkscape:vp_x="0 : 90 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_z="360 : 90 : 1"
-       inkscape:persp3d-origin="180 : 60 : 1"
-       id="perspective19" />
-    <marker
-       id="Triangle"
-       viewBox="0 0 10 10"
-       refX="0"
-       refY="5"
-       markerUnits="strokeWidth"
-       markerWidth="4"
-       markerHeight="3"
-       orient="auto">
-      <path
-         d="M 0 0 L 10 5 L 0 10 z"
-         id="path7" />
-    </marker>
-  </defs>
-  <rect
-     x="10"
-     y="10"
-     width="3980"
-     height="1980"
-     fill="none"
-     stroke="blue"
-     stroke-width="10"
-     id="rect9" />
-  <desc
-     id="desc11">Placing an arrowhead at the end of a path.
-  </desc>
-  <path
-     d="M 1008.4746,860.16949 C 970.87599,513.0324 1815.4083,165.8203 2169.4915,758.47458 2634.5171,922.31638 2393.0192,1086.1582 2500,1250"
-     fill="none"
-     stroke="black"
-     stroke-width="50"
-     stroke-dasharray="100,100"
-     marker-end="url(#Triangle)"
-     marker-start="url(#Triangle)"
-     id="path13"
-     sodipodi:nodetypes="ccc" />
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"
+[ <!ENTITY Smile "
+<rect x='.5' y='.5' width='29' height='39' fill='black' stroke='red'/>
+<g transform='translate(0, 5)'>
+<circle cx='15' cy='15' r='10' fill='yellow'/>
+<circle cx='12' cy='12' r='1.5' fill='black'/>
+<circle cx='17' cy='12' r='1.5' fill='black'/>
+<path d='M 10 19 A 8 8 0 0 0 20 19' stroke='black' stroke-width='2'/>
+</g>
+">
+<!ENTITY Viewport1 "<rect x='.5' y='.5' width='49' height='29'
+fill='none' stroke='blue'/>">
+<!ENTITY Viewport2 "<rect x='.5' y='.5' width='29' height='59'
+fill='none' stroke='blue'/>">
+]>
+
+<svg width="450px" height="300px" version="1.1"
+     xmlns="http://www.w3.org/2000/svg">
+  <desc>Example PreserveAspectRatio - illustrates preserveAspectRatio attribute</desc>
+  <rect x="1" y="1" width="448" height="298"
+        fill="none" stroke="blue"/>
+  <g font-size="9">
+    <text x="10" y="30">SVG to fit</text>
+    <g transform="translate(20,40)">&Smile;</g>
+    <text x="10" y="110">Viewport 1</text>
+    <g transform="translate(10,120)">&Viewport1;</g>
+    <text x="10" y="180">Viewport 2</text>
+    <g transform="translate(20,190)">&Viewport2;</g>
+
+    <g id="meet-group-1" transform="translate(100, 60)">
+      <text x="0" y="-30">--------------- meet ---------------</text>
+      <g><text y="-10">xMin*</text>&Viewport1;
+        <svg preserveAspectRatio="xMinYMin meet" viewBox="0 0 30 40"
+             width="50" height="30">&Smile;</svg></g>
+      <g transform="translate(70,0)"><text y="-10">xMid*</text>&Viewport1;
+        <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 30 40"
+             width="50" height="30">&Smile;</svg></g>
+      <g transform="translate(0,70)"><text y="-10">xMax*</text>&Viewport1;
+        <svg preserveAspectRatio="xMaxYMax meet" viewBox="0 0 30 40"
+             width="50" height="30">&Smile;</svg></g>
+    </g>
+
+    <g id="meet-group-2" transform="translate(250, 60)">
+      <text x="0" y="-30">---------- meet ----------</text>
+      <g><text y="-10">*YMin</text>&Viewport2;
+        <svg preserveAspectRatio="xMinYMin meet" viewBox="0 0 30 40"
+             width="30" height="60">&Smile;</svg></g>
+      <g transform="translate(50, 0)"><text y="-10">*YMid</text>&Viewport2;
+        <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 30 40"
+             width="30" height="60">&Smile;</svg></g>
+      <g transform="translate(100, 0)"><text y="-10">*YMax</text>&Viewport2;
+        <svg preserveAspectRatio="xMaxYMax meet" viewBox="0 0 30 40"
+             width="30" height="60">&Smile;</svg></g>
+    </g>
+
+    <g id="slice-group-1" transform="translate(100, 220)">
+      <text x="0" y="-30">---------- slice ----------</text>
+      <g><text y="-10">xMin*</text>&Viewport2;
+        <svg preserveAspectRatio="xMinYMin slice" viewBox="0 0 30 40"
+             width="30" height="60">&Smile;</svg></g>
+      <g transform="translate(50,0)"><text y="-10">xMid*</text>&Viewport2;
+        <svg preserveAspectRatio="xMidYMid slice" viewBox="0 0 30 40"
+             width="30" height="60">&Smile;</svg></g>
+      <g transform="translate(100,0)"><text y="-10">xMax*</text>&Viewport2;
+        <svg preserveAspectRatio="xMaxYMax slice" viewBox="0 0 30 40"
+             width="30" height="60">&Smile;</svg></g>
+    </g>
+
+    <g id="slice-group-2" transform="translate(250, 220)">
+      <text x="0" y="-30">--------------- slice ---------------</text>
+      <g><text y="-10">*YMin</text>&Viewport1;
+        <svg preserveAspectRatio="xMinYMin slice" viewBox="0 0 30 40"
+             width="50" height="30">&Smile;</svg></g>
+      <g transform="translate(70,0)"><text y="-10">*YMid</text>&Viewport1;
+        <svg preserveAspectRatio="xMidYMid slice" viewBox="0 0 30 40"
+             width="50" height="30">&Smile;</svg></g>
+      <g transform="translate(140,0)"><text y="-10">*YMax</text>&Viewport1;
+        <svg preserveAspectRatio="xMaxYMax slice" viewBox="0 0 30 40"
+             width="50" height="30">&Smile;</svg></g>
+    </g>   
+  </g>
 </svg>
