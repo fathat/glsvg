@@ -159,6 +159,20 @@ class Matrix(object):
     def translation(cls, x, y):
         return Matrix([1, 0, 0, 1, x, y])
 
+    @classmethod
+    def scale(cls, sx, sy):
+        return Matrix([sx, 0, 0, sy, 0, 0])
+
+    @classmethod
+    def rotation(cls, theta):
+        return Matrix([math.cos(theta), math.sin(theta), -math.sin(theta), math.cos(theta), 0, 0])
+
+    @classmethod
+    def transform(cls, x, y, theta=0, sx=1, sy=1):
+        return Matrix([math.cos(theta) * sx, math.sin(theta),
+                       -math.sin(theta), math.cos(theta) * sy,
+                       x, y])
+
     def inverse(self):
         d = float(self.values[0] * self.values[3] - self.values[1] * self.values[2])
         return Matrix([self.values[3] / d, -self.values[1] / d, -self.values[2] / d, self.values[0] / d,

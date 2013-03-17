@@ -15,10 +15,10 @@ A really simple example ::
     # ...
 
     # load svg file
-    svgObj = glsvg.SVG(filename)
+    svg = glsvg.SVG(filename)
 
     # draw svg file
-    svgObj.draw(x,y)
+    svg.draw(x,y)
 
 
 

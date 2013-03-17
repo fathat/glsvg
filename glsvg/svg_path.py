@@ -6,12 +6,12 @@ import graphics
 import lines
 import traceback
 
-from svg_parser_utils import parse_float
+from svg_parser_utils import parse_float, parse_list
 from svg_path_builder import SVGPathBuilder
 
 from glutils import DisplayListGenerator
 import svg_style
-from vector_math import Matrix, BoundingBox
+from vector_math import Matrix, BoundingBox, vec2
 from svg_constants import XMLNS
 
 
@@ -76,7 +76,6 @@ class SVGRenderableElement(object):
             part = part.parent
         return False
 
-
     @property
     def absolute_transform(self):
         """Return this transform, multiplied by chain of parents"""
@@ -96,6 +95,23 @@ class SVGRenderableElement(object):
 
 class SVGGroup(SVGRenderableElement):
     pass
+
+
+class SVGMarker(SVGRenderableElement):
+
+    def __init__(self, svg, element, parent):
+        SVGRenderableElement.__init__(self, svg, element, parent)
+
+        self.units = element.get('markerUnits', 'strokeWidth')
+        self.marker_width = parse_float(element.get('markerWidth', '3'))
+        self.marker_height = parse_float(element.get('markerHeight', '3'))
+        self.orient = element.get('orient', 'auto')
+        self.ref_x = parse_float(element.get('refX', '0'))
+        self.ref_y = parse_float(element.get('refY', '0'))
+
+        x, y, w, h = (parse_float(x) for x in parse_list(element.get("viewBox")))
+
+        self.vb_x, self.vb_y, self.vb_w, self.vb_h = x, y, w, h
 
 
 XLINK_NS = "{http://www.w3.org/1999/xlink}"
@@ -152,6 +168,7 @@ class SVGPath(SVGRenderableElement):
     def __init__(self, svg, element, parent):
 
         SVGRenderableElement.__init__(self, svg, element, parent)
+
         #: The original SVG file
         self.svg = svg
 
@@ -171,6 +188,14 @@ class SVGPath(SVGRenderableElement):
 
         #: The bounding box
         self._bounding_box = None
+
+        self.marker_start = element.get('marker-start', None)
+        self.marker_mid = element.get('marker-mid', None)
+        self.marker_end = element.get('marker-end', None)
+
+        if self.marker_start: self.marker_start = self.marker_start[5:-1]
+        if self.marker_mid: self.marker_mid = self.marker_mid[5:-1]
+        if self.marker_end: self.marker_end = self.marker_end[5:-1]
 
         path_builder = SVGPathBuilder()
 
@@ -196,15 +221,19 @@ class SVGPath(SVGRenderableElement):
         for loop in self.outlines:
             self.svg.n_lines += len(loop) - 1
             loop_plus = []
+
             for i in xrange(len(loop) - 1):
                 loop_plus += [loop[i], loop[i+1]]
+
             if isinstance(stroke, str):
                 g = self.svg._gradients[stroke]
                 strokes = [g.sample(x, self) for x in loop_plus]
             else:
                 strokes = [stroke for x in loop_plus]
+
             if len(loop_plus) == 0:
                 continue
+
             if len(self.style.stroke_dasharray):
                 ls = lines.split_line_by_pattern(loop_plus, self.style.stroke_dasharray)
 
@@ -232,6 +261,23 @@ class SVGPath(SVGRenderableElement):
                     line_cap=self.style.stroke_linecap,
                     join_type=self.style.stroke_linejoin,
                     miter_limit=miter_limit)
+
+                if self.marker_end:
+                    end_point = vec2(loop_plus[-1])
+                    almost_end_point = vec2(loop_plus[-2])
+                    angle = (end_point - almost_end_point).angle()
+                    marker = self.svg.defs[self.marker_end]
+                    sx = (marker.marker_width / marker.vb_w) * self.style.stroke_width
+                    sy = (marker.marker_height / marker.vb_h) * self.style.stroke_width
+
+                    rx = marker.ref_x
+                    ry = marker.ref_y
+
+
+                    with Matrix.transform(end_point.x, end_point.y, theta=angle):
+                        with Matrix.scale(sx, sy):
+                            with Matrix.translation(-rx, -ry):
+                                marker.render()
 
     def _render_gradient_fill(self):
         fill = self.style.fill

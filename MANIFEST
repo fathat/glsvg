@@ -8,6 +8,7 @@ examples/test_pyglet.py
 glsvg/__init__.py
 glsvg/glutils.py
 glsvg/gradient.py
+glsvg/graphics.py
 glsvg/lines.py
 glsvg/render_target.py
 glsvg/shader.py
@@ -22,13 +23,13 @@ glsvg/svg_style.py
 glsvg/vector_math.py
 svgs/0.svg
 svgs/1.svg
-svgs/3d.svg
+svgs/2.svg
+svgs/3.svg
+svgs/Giza_pyramid_complex.svg
 svgs/abcd.svg
 svgs/atiger.svg
-svgs/broken-rectangle-rounded-corners.svg
 svgs/butterfly.svg
 svgs/circle.svg
-svgs/circle_as_path.svg
 svgs/cloud.svg
 svgs/ellipse-combined.svg
 svgs/ellipse-overlapped.svg
@@ -38,6 +39,8 @@ svgs/gradient.svg
 svgs/inkscape-gradient.svg
 svgs/intaglio-gradient.svg
 svgs/intaglio.svg
+svgs/line-caps.svg
+svgs/line-joins.svg
 svgs/line.svg
 svgs/pattern.svg
 svgs/polygon-star-fillrule.svg
@@ -53,10 +56,12 @@ svgs/rect-named-colors.svg
 svgs/rect-opacity.svg
 svgs/rect.svg
 svgs/rectangles.svg
+svgs/rounded-rectangle.svg
 svgs/sharp_line_join.svg
 svgs/ship.svg
 svgs/sky.svg
 svgs/sky2.svg
+svgs/snowdonkey.svg
 svgs/spiral.svg
 svgs/sun.svg
 svgs/uneven_square.svg

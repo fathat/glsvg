@@ -15,3 +15,6 @@ API Reference
 
 .. autoclass:: glsvg.SVGPath
    :members:
+
+.. autoclass:: glsvg.SVGPathBuilder
+   :members:

@@ -28,9 +28,10 @@ from vector_math import *
 from svg_parser_utils import parse_color, parse_float, parse_style, parse_list
 from gradient import *
 
-from svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse
+from svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse, SVGMarker
 from svg_pattern import *
 import graphics
+
 
 class SVGConfig:
     """Configuration for how to render SVG objects, such as
@@ -115,6 +116,9 @@ class SVGDoc(object):
 
         #: Maps from pattern id to pattern
         self.patterns = {}
+
+        #: Maps from id to marker def
+        self.markers = {}
 
         #: Maps from id to path definition
         self.defs = {}
@@ -251,9 +255,9 @@ class SVGDoc(object):
     def _parse_doc(self):
         self._paths = []
 
-        #get the height measurement... if it ends
-        #with "cm" just sort of fake out some sort of
-        #measurement (right now it adds a zero)
+        # get the height measurement... if it ends
+        # with "cm" just sort of fake out some sort of
+        # measurement (right now it adds a zero)
         wm = self.tree._root.get("width", '0')
         hm = self.tree._root.get("height", '0')
 
@@ -293,6 +297,8 @@ class SVGDoc(object):
             renderable = SVGGroup(self, e, parent)
             if not parent and not renderable.is_def:
                 self._paths.append(renderable)
+        elif e.tag.endswith('marker'):
+            renderable = SVGMarker(self, e, parent)
         elif e.tag.endswith("text"):
             self._warn("Text tag not supported")
         elif e.tag.endswith('linearGradient'):
@@ -304,6 +310,8 @@ class SVGDoc(object):
             self.patterns[e.get('id')] = renderable
         elif e.tag.endswith('defs'):
             renderable = SVGDefs(self, e, parent)
+        elif e.tag.endswith('marker'):
+            pass
         elif e.tag.endswith('use'):
             renderable = SVGUse(self, e, parent)
         for c in e.getchildren():

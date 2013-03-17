@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name = "glsvg",
     packages = ["glsvg"],
-    version = "0.3",
+    version = "0.4",
     description = "OpenGL SVG Renderer",
     author = "Ian Overgard",
     author_email = "ian.overgard@gmail.com",
