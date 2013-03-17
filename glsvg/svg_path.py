@@ -262,22 +262,31 @@ class SVGPath(SVGRenderableElement):
                     join_type=self.style.stroke_linejoin,
                     miter_limit=miter_limit)
 
+                if self.marker_start:
+                    end_point = vec2(loop_plus[0])
+                    almost_end_point = vec2(loop_plus[1])
+                    marker = self.svg.defs[self.marker_start]
+                    self._render_marker(end_point, almost_end_point, marker)
                 if self.marker_end:
                     end_point = vec2(loop_plus[-1])
                     almost_end_point = vec2(loop_plus[-2])
-                    angle = (end_point - almost_end_point).angle()
                     marker = self.svg.defs[self.marker_end]
-                    sx = (marker.marker_width / marker.vb_w) * self.style.stroke_width
-                    sy = (marker.marker_height / marker.vb_h) * self.style.stroke_width
+                    self._render_marker(end_point, almost_end_point, marker)
 
-                    rx = marker.ref_x
-                    ry = marker.ref_y
+    def _render_marker(self, a, b, marker):
+        angle = (a - b).angle()
+
+        sx = (marker.marker_width / marker.vb_w) * self.style.stroke_width
+        sy = (marker.marker_height / marker.vb_h) * self.style.stroke_width
+
+        rx = marker.ref_x
+        ry = marker.ref_y
 
 
-                    with Matrix.transform(end_point.x, end_point.y, theta=angle):
-                        with Matrix.scale(sx, sy):
-                            with Matrix.translation(-rx, -ry):
-                                marker.render()
+        with Matrix.transform(a.x, a.y, theta=angle):
+            with Matrix.scale(sx, sy):
+                with Matrix.translation(-rx, -ry):
+                    marker.render()
 
     def _render_gradient_fill(self):
         fill = self.style.fill
