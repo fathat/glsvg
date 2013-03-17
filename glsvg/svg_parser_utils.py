@@ -6,6 +6,9 @@ re_list_parser = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 def parse_list(string):
     return re_list_parser.findall(string)
 
+def parse_float_list(string):
+    return [parse_float(x.strip()) for x in string.split(',')]
+
 def parse_style(string):
     s_dict = {}
     for item in string.split(';'):

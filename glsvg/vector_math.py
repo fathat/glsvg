@@ -114,7 +114,8 @@ class Matrix(object):
                 x, y = [float(x) for x in parse_list(string[10:-1])]
                 self.values = [1, 0, 0, 1, x, y]
             elif string.startswith('scale('):
-                scale_vars = [float(x) for x in parse_list(string[6:-1])]
+                inside = string[6:-1]
+                scale_vars = [float(x) for x in parse_float_list(inside)]
 
                 if len(scale_vars) == 1:
                     self.values = [scale_vars[0], 0, 0, scale_vars[0], 0, 0]
