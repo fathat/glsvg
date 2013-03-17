@@ -260,6 +260,17 @@ class SVGPath(SVGRenderableElement):
                         join_type=self.style.stroke_linejoin,
                         miter_limit=miter_limit)
 
+                if self.marker_start:
+                    end_point = vec2(loop_plus[0])
+                    almost_end_point = vec2(loop_plus[1])
+                    marker = self.svg.defs[self.marker_start]
+                    self._render_marker(end_point, almost_end_point, marker)
+                if self.marker_end:
+                    end_point = vec2(loop_plus[-1])
+                    almost_end_point = vec2(loop_plus[-2])
+                    marker = self.svg.defs[self.marker_end]
+                    self._render_marker(end_point, almost_end_point, marker)
+
             else:
                 lines.draw_polyline(
                     loop_plus,
