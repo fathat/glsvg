@@ -392,3 +392,12 @@ class SVGPath(SVGRenderableElement):
         return "<SVGPath id=%s title='%s' description='%s' transform=%s>" % (
             self.id, self.title, self.description, self.transform
         )
+
+
+class SVGViewBox:
+
+    def __init__(self, x, y, w, h):
+        pass
+
+    def matrix(self):
+        pass
