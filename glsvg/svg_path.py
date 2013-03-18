@@ -395,17 +395,17 @@ class SVGPath(SVGRenderableElement):
     def on_render(self):
         """Render immediately to screen (no display list). Slow! Consider
         using SVG.draw(...) instead."""
-        with self.transform:
-            if self.triangles:
-                try:
-                    if isinstance(self.style.fill, str) and self.style.fill in self.svg.patterns:
-                        self._render_pattern_fill()
-                    else:
-                        self._render_gradient_fill()
-                except Exception as exception:
-                    traceback.print_exc(exception)
-            if self.style.stroke and self.outlines:
-                self._render_stroke()
+
+        if self.triangles:
+            try:
+                if isinstance(self.style.fill, str) and self.style.fill in self.svg.patterns:
+                    self._render_pattern_fill()
+                else:
+                    self._render_gradient_fill()
+            except Exception as exception:
+                traceback.print_exc(exception)
+        if self.style.stroke and self.outlines:
+            self._render_stroke()
 
     def __repr__(self):
         return "<SVGPath id=%s title='%s' description='%s' transform=%s>" % (

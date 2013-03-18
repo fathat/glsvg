@@ -65,3 +65,28 @@ def draw_textured_triangles(tris, tex_coords):
     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
     gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
     gl.glDisable(gl.GL_TEXTURE_2D)
+
+
+def draw_quad(x, y, w, h):
+
+    points = [x, y,
+              x + w, y,
+              x + w, y + h,
+              x, y + h]
+
+    tex_coords = [0, 1,
+                  1, 1,
+                  1, 0,
+                  0, 0]
+    add_triangle_stats(2)
+    gl.glColor4f(1, 1, 1, 1)
+    gl.glEnable(gl.GL_TEXTURE_2D)
+    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+
+    gl.glVertexPointer(2, gl.GL_FLOAT, 0, points)
+    gl.glTexCoordPointer(2, gl.GL_FLOAT, 0, tex_coords)
+    gl.glDrawArrays(gl.GL_QUADS, 0, len(points) / 2)
+    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+    gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+    gl.glDisable(gl.GL_TEXTURE_2D)

@@ -32,6 +32,7 @@ from svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse, SVGMarker, SVGContainer
 from svg_pattern import *
 import graphics
 
+from render_target import CanvasManager
 
 class SVGConfig:
     """Configuration for how to render SVG objects, such as
@@ -73,6 +74,7 @@ class SVGConfig:
             self.bezier_points
         )
 
+canvas_manager = None
 
 class SVGDoc(SVGContainer):
     """
@@ -82,6 +84,8 @@ class SVGDoc(SVGContainer):
     render.
     
     """
+
+
 
     def __init__(self, filename_or_element, parent=None, anchor_x=0, anchor_y=0, config=None):
         """Creates an SVG document from a .svg or .svgz file.
@@ -98,6 +102,10 @@ class SVGDoc(SVGContainer):
         """
 
         SVGContainer.__init__(self, parent)
+
+        global canvas_manager
+        if not canvas_manager:
+            canvas_manager = CanvasManager()
 
         if not config:
             self.config = SVGConfig()
@@ -300,6 +308,8 @@ class SVGDoc(SVGContainer):
                 of two floats (xscale, yscale).
 
         """
+        canvas_manager.update()
+        bg = canvas_manager.get('BackgroundImage')
 
         with CurrentTransform():
             gl.glTranslatef(x, y, z)
@@ -313,7 +323,10 @@ class SVGDoc(SVGContainer):
             if self._a_x or self._a_y:
                 gl.glTranslatef(-self._a_x, -self._a_y, 0)
 
-            self.disp_list()
+            with bg:
+                gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+                self.disp_list()
+        bg.blit()
 
     def prerender_defs(self):
         gl.glEnable(gl.GL_BLEND)

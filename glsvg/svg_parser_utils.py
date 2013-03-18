@@ -3,7 +3,7 @@ import svg_constants
 
 re_list_parser = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 
-re_func_parser = re.compile('(\w+\((?:[0-9]\w*\s*)?(?:\s*,\s*[0-9]\w*\s*)*\))')
+re_func_parser = re.compile('\w+\((?:\-?[0-9]+(?:\.[0-9]*)?\w*\s*)?(?:\s*,\s*\-?\s*[0-9]*(?:\.[0-9]+)?\w*\s*)*\)')
 
 def get_fns(string):
     string = string.strip()

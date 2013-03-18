@@ -1,5 +1,6 @@
 __author__ = 'Ian'
 import OpenGL.GL as gl
+import graphics
 
 
 class Texture2D:
@@ -26,6 +27,14 @@ class Texture2D:
         print "Tex OK? ", gl.glGetError() == gl.GL_NO_ERROR
         self.unbind()
 
+    def resize(self, w, h):
+        self.width = w
+        self.height = h
+        self.bind()
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA8, self.width, self.height, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
+        self.unbind()
+
+
     def bind(self):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.id)
 
@@ -38,14 +47,15 @@ class Texture2D:
 
     def __exit__(self, type, value, traceback):
         self.unbind()
-        pass
 
 
 class RenderBufferObject:
     def __init__(self, w, h):
-        self.id = gl.glGenRenderbuffers(1);
-        self.width, self.height = w, h
+        self.id = gl.glGenRenderbuffers(1)
+        self.resize(w, h)
 
+    def resize(self, w, h):
+        self.width, self.height = w, h
         self.bind()
         gl.glRenderbufferStorage(gl.GL_RENDERBUFFER, gl.GL_DEPTH24_STENCIL8, w, h)
         self.unbind()
@@ -86,6 +96,16 @@ class RenderTarget:
             print "Render target error: " + str(status)
             return False
 
+    def blit(self):
+        w,h = self.texture.width, self.texture.height
+        with self.texture:
+            graphics.draw_quad(0.5, 0.5, w+0.5, h+0.5)
+
+    def resize(self, w, h):
+        self.texture.resize(w, h)
+        if self.depth_stencil:
+            self.depth_stencil.resize(w, h)
+
     def bind(self):
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.id)
 
@@ -99,3 +119,32 @@ class RenderTarget:
     def __exit__(self, type, value, traceback):
         self.unbind()
         pass
+
+
+class CanvasManager:
+
+    def __init__(self):
+        print "Initializing canvas manager"
+        self.canvas = {}
+        vp = list(gl.glGetFloatv(gl.GL_VIEWPORT))
+        self.w = int(vp[2])
+        self.h = int(vp[3])
+
+    def resize(self, w, h):
+        print "resizing",w,h
+        self.w = w
+        self.h = h
+
+        for c in self.canvas.values():
+            c.resize(w, h)
+
+    def get(self, name):
+        if not name in self.canvas:
+            self.canvas[name] = RenderTarget(self.w, self.h)
+        return self.canvas[name]
+
+    def update(self):
+        vp = list(gl.glGetFloatv(gl.GL_VIEWPORT))
+
+        if self.w != int(vp[2]) and self.h != int(vp[3]):
+            self.resize(int(vp[2]), int(vp[3]))
