@@ -6,6 +6,8 @@ import graphics
 import lines
 import traceback
 
+import OpenGL.GL as gl
+
 from svg_parser_utils import parse_float, parse_list, get_fns
 from svg_path_builder import SVGPathBuilder
 
@@ -396,6 +398,15 @@ class SVGPath(SVGRenderableElement):
         """Render immediately to screen (no display list). Slow! Consider
         using SVG.draw(...) instead."""
 
+        gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+
+        gl.glEnable(gl.GL_DEPTH_TEST)
+
+        if self.style.stroke and self.outlines:
+            self._render_stroke()
+
+        gl.glPushMatrix()
+        gl.glTranslatef(0, 0, -0.1)
         if self.triangles:
             try:
                 if isinstance(self.style.fill, str) and self.style.fill in self.svg.patterns:
@@ -404,8 +415,10 @@ class SVGPath(SVGRenderableElement):
                     self._render_gradient_fill()
             except Exception as exception:
                 traceback.print_exc(exception)
-        if self.style.stroke and self.outlines:
-            self._render_stroke()
+        gl.glPopMatrix()
+        gl.glDisable(gl.GL_DEPTH_TEST)
+
+
 
     def __repr__(self):
         return "<SVGPath id=%s title='%s' description='%s' transform=%s>" % (

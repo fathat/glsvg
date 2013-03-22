@@ -124,7 +124,6 @@ class SVGWindow(pyglet.window.Window):
             glEnable(GL_TEXTURE_2D)
             pattern.bind_texture()
 
-
             glColor4f(1,1,1,1)
             glBegin(GL_QUADS)
             glTexCoord2f(0, 0)
@@ -159,7 +158,7 @@ class SVGWindow(pyglet.window.Window):
 
 
 def main():
-    config = pyglet.gl.Config(sample_buffers=1, samples=4, stencil_size=8, double_buffer=True)
+    config = pyglet.gl.Config(stencil_size=8, double_buffer=True)
     w = SVGWindow(width=800, height=600, config=config, resizable=True)
     pyglet.app.run()
 

@@ -39,6 +39,9 @@ class SVGConfig:
     the amount of detail allowed for bezier curves and availability of the stencil buffer"""
 
     def __init__(self):
+
+        self.use_fxaa = True
+
         #: The number of stencil bits available
         self.stencil_bits = gl.glGetInteger(gl.GL_STENCIL_BITS)
 
@@ -324,7 +327,7 @@ class SVGDoc(SVGContainer):
                 gl.glTranslatef(-self._a_x, -self._a_y, 0)
 
             with bg:
-                gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+                gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
                 self.disp_list()
         bg.blit()
 
