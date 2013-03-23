@@ -109,12 +109,19 @@ class SVGRenderableElement(SVGContainer):
         pass
 
     def render(self):
-        with CanvasManager.inst().temp():
+        with CanvasManager.inst().temp() as t:
+            gl.glClearColor(0, 0, 0, 0)
+            gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
             with self.transform:
                 self.on_render()
 
                 for c in self.children:
                     c.render()
+
+        gl.glPushMatrix()
+        gl.glLoadIdentity()
+        t.blit()
+        gl.glPopMatrix()
 
 
 class SVGGroup(SVGRenderableElement):

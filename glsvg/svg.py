@@ -153,7 +153,7 @@ class SVGDoc(SVGContainer):
 
         self.parse_root(self.root)
 
-        self._generate_disp_list()
+        self.disp_list = None
 
     def parse_root(self, root):
         self._paths = []
@@ -310,6 +310,11 @@ class SVGDoc(SVGContainer):
         """
         CanvasManager.inst().update()
         bg = CanvasManager.inst().get('BackgroundImage')
+        temp = CanvasManager.inst().get('temp1')
+        temp = CanvasManager.inst().get('temp2')
+        temp = CanvasManager.inst().get('temp3')
+        temp = CanvasManager.inst().get('temp4')
+        temp = CanvasManager.inst().get('temp5')
 
         with CurrentTransform():
             gl.glTranslatef(x, y, z)
@@ -325,7 +330,7 @@ class SVGDoc(SVGContainer):
 
             with bg:
                 gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-                self.disp_list()
+                self.render()
         bg.blit()
 
     def prerender_defs(self):

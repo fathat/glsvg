@@ -71,10 +71,11 @@ class RenderTarget:
 
     id_stack = []
 
-    def __init__(self, w, h, depth_and_stencil=False):
-        self.texture = Texture2D(w, h)
+    def __init__(self, w, h, depth_and_stencil=True):
         self.id = gl.glGenFramebuffers(1)
+        print "Generated frame buffer object", self.id
         self.bind()
+        self.texture = Texture2D(w, h)
         self.depth_stencil = None
         if depth_and_stencil:
             self.depth_stencil = RenderBufferObject(w, h)
