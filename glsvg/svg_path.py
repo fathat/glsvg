@@ -15,6 +15,7 @@ from glutils import DisplayListGenerator
 import svg_style
 from vector_math import Matrix, BoundingBox, vec2
 from svg_constants import XMLNS
+from render_target import CanvasManager
 
 
 class SVGContainer(object):
@@ -42,6 +43,8 @@ class SVGRenderableElement(SVGContainer):
         self.id = element.get('id', '')
 
         SVGContainer.__init__(self, parent)
+
+        self.svg = svg
 
         #: Is this element a pattern?
         self.is_pattern = element.tag.endswith('pattern')
@@ -106,11 +109,12 @@ class SVGRenderableElement(SVGContainer):
         pass
 
     def render(self):
-        with self.transform:
-            self.on_render()
+        with CanvasManager.inst().temp():
+            with self.transform:
+                self.on_render()
 
-            for c in self.children:
-                c.render()
+                for c in self.children:
+                    c.render()
 
 
 class SVGGroup(SVGRenderableElement):

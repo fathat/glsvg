@@ -68,7 +68,10 @@ class RenderBufferObject:
 
 
 class RenderTarget:
-    def __init__(self, w, h, depth_and_stencil=True):
+
+    id_stack = []
+
+    def __init__(self, w, h, depth_and_stencil=False):
         self.texture = Texture2D(w, h)
         self.id = gl.glGenFramebuffers(1)
         self.bind()
@@ -107,10 +110,20 @@ class RenderTarget:
             self.depth_stencil.resize(w, h)
 
     def bind(self):
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.id)
+        RenderTarget.id_stack.append(self.id)
 
     def unbind(self):
-        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+        if len(RenderTarget.id_stack):
+            del RenderTarget.id_stack[-1]
+
+        if len(RenderTarget.id_stack) >= 1:
+            id = RenderTarget.id_stack[-1]
+            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
+            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, id)
+        else:
+            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, 0)
 
     def __enter__(self):
         self.bind()
@@ -122,6 +135,7 @@ class RenderTarget:
 
 
 class CanvasManager:
+    instance = None
 
     def __init__(self):
         print "Initializing canvas manager"
@@ -131,7 +145,7 @@ class CanvasManager:
         self.h = int(vp[3])
 
     def resize(self, w, h):
-        print "resizing",w,h
+        print "resizing", w, h
         self.w = w
         self.h = h
 
@@ -143,8 +157,17 @@ class CanvasManager:
             self.canvas[name] = RenderTarget(self.w, self.h)
         return self.canvas[name]
 
+    def temp(self):
+        return self.get('temp' + str(len(RenderTarget.id_stack)))
+
     def update(self):
         vp = list(gl.glGetFloatv(gl.GL_VIEWPORT))
 
         if self.w != int(vp[2]) and self.h != int(vp[3]):
             self.resize(int(vp[2]), int(vp[3]))
+
+    @classmethod
+    def inst(cls):
+        if not cls.instance:
+            cls.instance = CanvasManager()
+        return cls.instance

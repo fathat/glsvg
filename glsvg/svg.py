@@ -77,7 +77,6 @@ class SVGConfig:
             self.bezier_points
         )
 
-canvas_manager = None
 
 class SVGDoc(SVGContainer):
     """
@@ -106,9 +105,7 @@ class SVGDoc(SVGContainer):
 
         SVGContainer.__init__(self, parent)
 
-        global canvas_manager
-        if not canvas_manager:
-            canvas_manager = CanvasManager()
+
 
         if not config:
             self.config = SVGConfig()
@@ -311,8 +308,8 @@ class SVGDoc(SVGContainer):
                 of two floats (xscale, yscale).
 
         """
-        canvas_manager.update()
-        bg = canvas_manager.get('BackgroundImage')
+        CanvasManager.inst().update()
+        bg = CanvasManager.inst().get('BackgroundImage')
 
         with CurrentTransform():
             gl.glTranslatef(x, y, z)
