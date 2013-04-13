@@ -109,7 +109,7 @@ class SVGRenderableElement(SVGContainer):
         pass
 
     def render(self):
-        with CanvasManager.inst().temp():
+        #with CanvasManager.inst().temp():
             with self.transform:
                 self.on_render()
 
