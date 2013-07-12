@@ -4,7 +4,7 @@ Example usage:
     $ import glsvg
     $ my_svg = glsvg.SVG('filename.svg')
     $ my_svg.draw(100, 200, angle=15)
-    
+
 """
 
 import OpenGL.GL as gl
@@ -81,14 +81,11 @@ class SVGConfig:
 class SVGDoc(SVGContainer):
     """
     An SVG image document.
-    
-    Users should instantiate this object once for each SVG file they wish to 
+
+    Users should instantiate this object once for each SVG file they wish to
     render.
-    
+
     """
-
-
-
     def __init__(self, filename_or_element, parent=None, anchor_x=0, anchor_y=0, config=None):
         """Creates an SVG document from a .svg or .svgz file.
 
@@ -96,16 +93,14 @@ class SVGDoc(SVGContainer):
             `filename`: str
                 The name of the file to be loaded.
             `anchor_x`: float
-                The horizontal anchor position for scaling and rotations. Defaults to 0. The symbolic 
+                The horizontal anchor position for scaling and rotations. Defaults to 0. The symbolic
                 values 'left', 'center' and 'right' are also accepted.
             `anchor_y`: float
-                The vertical anchor position for scaling and rotations. Defaults to 0. The symbolic 
+                The vertical anchor position for scaling and rotations. Defaults to 0. The symbolic
                 values 'bottom', 'center' and 'top' are also accepted.
         """
 
         SVGContainer.__init__(self, parent)
-
-
 
         if not config:
             self.config = SVGConfig()
@@ -138,9 +133,6 @@ class SVGDoc(SVGContainer):
         self.filename = filename_or_element if isinstance(filename_or_element, str) else None
         self._gradients = GradientContainer()
 
-        self._anchor_x = anchor_x
-        self._anchor_y = anchor_y
-
         if self.filename:
             if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08':  # gzip magic numbers
                 import gzip
@@ -154,6 +146,9 @@ class SVGDoc(SVGContainer):
         self.parse_root(self.root)
 
         self._generate_disp_list()
+
+        self.anchor_x = anchor_x
+        self.anchor_y = anchor_y
 
     def parse_root(self, root):
         self._paths = []
@@ -254,13 +249,13 @@ class SVGDoc(SVGContainer):
             self._a_x = self.width
         else:
             self._a_x = self._anchor_x
-    
+
     def _get_anchor_x(self):
         return self._anchor_x
 
     #: Where the document is anchored. Valid values are numerical, or 'left', 'right', 'center'
     anchor_x = property(_get_anchor_x, _set_anchor_x)
-    
+
     def _set_anchor_y(self, anchor_y):
         self._anchor_y = anchor_y
         if self._anchor_y == 'bottom':
@@ -277,7 +272,7 @@ class SVGDoc(SVGContainer):
 
     #: Where the document is anchored. Valid values are numerical, or 'top', 'bottom', 'center'
     anchor_y = property(_get_anchor_y, _set_anchor_y)
-    
+
     def _generate_disp_list(self):
 
         # prepare all the patterns
@@ -292,19 +287,19 @@ class SVGDoc(SVGContainer):
 
     def draw(self, x, y, z=0, angle=0, scale=1):
         """Draws the SVG to screen.
-        
+
         Args:
             `x` : float
                 The x-coordinate at which to draw.
             `y` : float
                 The y-coordinate at which to draw.
             `z` : float
-                The z-coordinate at which to draw. Defaults to 0. Note that z-ordering may not 
+                The z-coordinate at which to draw. Defaults to 0. Note that z-ordering may not
                 give expected results when transparency is used.
             `angle` : float
                 The angle by which the image should be rotated (in degrees). Defaults to 0.
             `scale` : float
-                The amount by which the image should be scaled, either as a float, or a tuple 
+                The amount by which the image should be scaled, either as a float, or a tuple
                 of two floats (xscale, yscale).
 
         """
@@ -355,4 +350,3 @@ class SVGDoc(SVGContainer):
 
     def _warn(self, message):
         print "Warning: SVG Parser (%s) - %s" % (self.filename, message)
-
