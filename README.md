@@ -14,7 +14,7 @@ Usage
     # ...
 
     # load svg file
-    svg_doc = glsvg.SVG(filename)
+    svg_doc = glsvg.SVGDoc(filename)
 
     # draw svg file
     svg_doc.draw(x,y)
@@ -56,4 +56,3 @@ Credits:
 Based on the squirtle mini-library by Martin O'Leary:
 
  http://www.pyweek.org/d/1783/
-
