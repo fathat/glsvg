@@ -86,9 +86,6 @@ class SVGDoc(SVGContainer):
     render.
 
     """
-
-
-
     def __init__(self, filename_or_element, parent=None, anchor_x=0, anchor_y=0, config=None):
         """Creates an SVG document from a .svg or .svgz file.
 
@@ -104,8 +101,6 @@ class SVGDoc(SVGContainer):
         """
 
         SVGContainer.__init__(self, parent)
-
-
 
         if not config:
             self.config = SVGConfig()
@@ -138,9 +133,6 @@ class SVGDoc(SVGContainer):
         self.filename = filename_or_element if isinstance(filename_or_element, str) else None
         self._gradients = GradientContainer()
 
-        self.anchor_x = anchor_x
-        self.anchor_y = anchor_y
-
         if self.filename:
             if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08':  # gzip magic numbers
                 import gzip
@@ -154,6 +146,9 @@ class SVGDoc(SVGContainer):
         self.parse_root(self.root)
 
         self._generate_disp_list()
+
+        self.anchor_x = anchor_x
+        self.anchor_y = anchor_y
 
     def parse_root(self, root):
         self._paths = []
