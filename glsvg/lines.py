@@ -82,6 +82,8 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
 
         start_angle = av.angle()
         target_angle = bv.angle()
+        if start_angle > target_angle:
+            start_angle -= 2.0 * math.pi
 
         theta = start_angle
         pln.lower_v.append(pln.lower_join)
@@ -121,6 +123,8 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
 
         start_angle = av.angle()
         target_angle = bv.angle()
+        if start_angle < target_angle:
+            start_angle += 2.0 * math.pi
 
         theta = start_angle
         pln.upper_v.append(ln.upper_join)
