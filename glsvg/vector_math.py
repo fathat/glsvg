@@ -76,6 +76,10 @@ def intersection(p1, p2, p3, p4):
     det = A1 * B2 - A2 * B1
 
     if abs(det) < EPSILON:  # Lines are parallel
+        if (p1 == p3) or (p1 == p4):
+            return True, p1
+        elif (p2 == p3) or (p2 == p4):
+            return True, p2
         return False, None
     else:
         result = vec2(

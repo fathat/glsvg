@@ -49,6 +49,11 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
     up_intersection, ln.upper_join = ln_intersection(pln.upper_edge, ln.upper_edge)
     lo_intersection, ln.lower_join = ln_intersection(pln.lower_edge, ln.lower_edge)
 
+    if up_intersection and lo_intersection:
+        pln.upper_v.append(pln.upper_join)
+        pln.lower_v.append(pln.lower_join)
+        return
+
     if ln.upper_join == None:
         ln.upper_join = ln.upper_edge.start
 
@@ -77,6 +82,8 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
 
         start_angle = av.angle()
         target_angle = bv.angle()
+        if start_angle > target_angle:
+            start_angle -= 2.0 * math.pi
 
         theta = start_angle
         pln.lower_v.append(pln.lower_join)
@@ -116,6 +123,8 @@ def _process_joint(ln, pln, miter_limit, rounded=False):
 
         start_angle = av.angle()
         target_angle = bv.angle()
+        if start_angle < target_angle:
+            start_angle += 2.0 * math.pi
 
         theta = start_angle
         pln.upper_v.append(ln.upper_join)
