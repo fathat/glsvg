@@ -195,8 +195,11 @@ class SVGDoc(SVGContainer):
 
             if renderable.id:
                 self.path_lookup[renderable.id] = renderable
-        elif e.tag.endswith('}g'):
+        elif e.tag.endswith('}g') or e.tag == 'g':
             renderable = SVGGroup(self, e, parent)
+            if renderable.id:
+                self.path_lookup[renderable.id] = renderable
+                self.defs[renderable.id] = renderable
             if not parent and not renderable.is_def:
                 self._paths.append(renderable)
         elif e.tag.endswith('svg'):
@@ -219,6 +222,7 @@ class SVGDoc(SVGContainer):
             renderable = SVGMarker(self, e, parent)
         elif e.tag.endswith('use'):
             renderable = SVGUse(self, e, parent)
+            self._paths.append(renderable)
         for c in e.getchildren():
             try:
                 self._parse_element(c, renderable)

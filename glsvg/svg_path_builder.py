@@ -108,8 +108,8 @@ class SVGPathBuilder(object):
             self.end_path()
         elif e.tag.endswith('circle'):
             self.shape = path.shape = 'circle'
-            cx = float(e.get('cx'))
-            cy = float(e.get('cy'))
+            cx = float(e.get('cx', 0))
+            cy = float(e.get('cy', 0))
             r = float(e.get('r'))
             path.cx, path.cy, path.r = cx, cy, r
             for i in xrange(config.circle_points):
@@ -119,8 +119,8 @@ class SVGPathBuilder(object):
             self.end_path()
         elif e.tag.endswith('ellipse'):
             self.shape = path.shape = 'ellipse'
-            cx = float(e.get('cx'))
-            cy = float(e.get('cy'))
+            cx = float(e.get('cx', 0))
+            cy = float(e.get('cy', 0))
             rx = float(e.get('rx'))
             ry = float(e.get('ry'))
             path.cx, path.cy, path.rx, path.ry = cx, cy, rx, ry

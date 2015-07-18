@@ -79,7 +79,7 @@ class Gradient(object):
         self.grad_transform = Matrix(element.get('gradientTransform'))
         self.inv_transform = Matrix(element.get('gradientTransform')).inverse()
         self.opacity = element.get('opacity', 1.0)
-
+        self.units = element.get('gradientUnits', 'objectBoundingBox')
         inherit = self.element.get('{http://www.w3.org/1999/xlink}href')
         parent = None
         delay_params = False
@@ -143,7 +143,7 @@ class LinearGradient(Gradient):
             / ((self.get_x1(path) - self.get_x2(path)) ** 2 + (self.get_y1(path) - self.get_y2(path)) ** 2)
 
     def get_x1(self, path):
-        if self.x1.endswith("%"):
+        if self.units == 'objectBoundingBox':
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.x1)
             return percentage * (maxx - minx) + minx
@@ -151,7 +151,7 @@ class LinearGradient(Gradient):
             return float(self.x1)
 
     def get_x2(self, path):
-        if self.x2.endswith("%"):
+        if self.units == 'objectBoundingBox':
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.x2)
             return percentage * (maxx - minx) + minx
@@ -159,7 +159,7 @@ class LinearGradient(Gradient):
             return float(self.x2)
 
     def get_y2(self, path):
-        if self.y1.endswith("%"):
+        if self.units == 'objectBoundingBox':
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.y1)
             return percentage * (maxy - miny) + miny
@@ -167,7 +167,7 @@ class LinearGradient(Gradient):
             return float(self.y1)
 
     def get_y1(self, path):
-        if self.y2.endswith("%"):
+        if self.units == 'objectBoundingBox':
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.y2)
             return percentage * (maxy - miny) + miny
@@ -213,37 +213,62 @@ class RadialGradient(Gradient):
     params = ['cx', 'cy', 'r', 'stops']
 
     def __init__(self, *args):
+        element = args[0]
         self.cx = '50%'
         self.cy = "50%"
         self.r = "100%"
+        self.fx = element.get('fx', None)
+        self.fy = element.get('fy', None)
+        
+        
         Gradient.__init__(self, *args)
 
     def grad_value(self, pt, path):
         return math.sqrt((pt[0] - self.get_cx(path)) ** 2 + (pt[1] - self.get_cy(path)) ** 2) / self.get_r(path)
 
     def get_cx(self, path):
-        if self.cx.endswith("%"):
+        if self.units == 'objectBoundingBox':
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.cx)
             return percentage * (maxx - minx) + minx
-        else:
+        else: #userSpaceOnUse
             return float(self.cx)
 
     def get_cy(self, path):
-        if self.cy.endswith("%"):
+        if self.units == 'objectBoundingBox':
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.cy)
             return percentage * (maxy - miny) + miny
-        else:
+        else: #userSpaceOnUse
             return float(self.cy)
 
+    def get_fx(self, path):
+        if self.fx == None:
+            return self.get_cx(path)
+        if self.units == 'objectBoundingBox':
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.fx)
+            return percentage * (maxx - minx) + minx
+        else: #userSpaceOnUse
+            return float(self.fx)
+
+    def get_fy(self, path):
+        if self.fy == None:
+            return self.get_cy(path)
+        if self.units == 'objectBoundingBox':
+            minx, miny, maxx, maxy = path.bounding_box()
+            percentage = parse_float(self.fy)
+            return percentage * (maxy - miny) + miny
+        else: #userSpaceOnUse
+            return float(self.fy)
+
     def get_r(self, path):
-        if self.r.endswith("%"):
+        if self.units == 'objectBoundingBox':
             minx, miny, maxx, maxy = path.bounding_box()
             percentage = parse_float(self.r)
             extent = min(maxx-minx, maxy-miny)
             return percentage * extent
-        else:
+        else: #userSpaceOnUse
             return float(self.r)
 
     def apply_shader(self, path, transform, opacity):
@@ -252,6 +277,7 @@ class RadialGradient(Gradient):
         gradient_shaders.radial_shader.uniformf("opacity", self.opacity*opacity)
         gradient_shaders.radial_shader.uniformf("radius", self.get_r(path))
         gradient_shaders.radial_shader.uniformf("center", self.get_cx(path), self.get_cy(path))
+        gradient_shaders.radial_shader.uniformf("focalPoint", self.get_fx(path), self.get_fy(path))
         gradient_shaders.radial_shader.uniform_matrixf("worldTransform", False, svg_matrix_to_gl_matrix(transform))
         gradient_shaders.radial_shader.uniform_matrixf("gradientTransform",
                                      False,

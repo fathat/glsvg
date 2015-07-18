@@ -166,7 +166,8 @@ class SVGUse(SVGRenderableElement):
 
     def render(self):
         with self.transform:
-            self.svg.defs[self.target].render()
+            defn = self.svg.defs[self.target]
+            defn.render()
 
 
 class SVGDefs(SVGRenderableElement):

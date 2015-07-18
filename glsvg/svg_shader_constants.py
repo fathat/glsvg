@@ -38,13 +38,14 @@ void main()
 {
     vec4 result;
     
-    vec3 transformed = invGradientTransform*vec3(localCoords.x, localCoords.y, 1);
     
-    //what is this actually doing?
-    vec3 realcenter = vec3(center.x, center.y, 1);
 
+    vec3 tFocalPoint = invGradientTransform*vec3(focalPoint.x, focalPoint.y, 1.0);
+    vec3 transformed = invGradientTransform*vec3(localCoords.x, localCoords.y, 1.0);
+        
     //calculate the intensity
-    float intensity = clamp(distance(transformed.xy, realcenter.xy) / radius, 0.0, 1.0 );
+    float intensity = clamp(distance(transformed.xy, focalPoint.xy) / radius, 0.0, 1.0 );
+    //float intensity = clamp(distance(transformed.xy, realcenter.xy) / radius, 0.0, 1.0 );
     if(intensity <= stops.x)
     {
         result.rgba = mix(stop0, stop1, (intensity / stops.x));

@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{10c5f13c-2e62-4992-a848-d11ea648673e}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>examples\test_pyglet.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>examples</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>{748f9688-95f5-4dd7-8107-4fae01314e63}</InterpreterId>
+    <InterpreterVersion>2.7</InterpreterVersion>
+    <IsWindowsApplication>False</IsWindowsApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+    <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="docs\_build\html\genindex.html" />
+    <Content Include="docs\_build\html\index.html" />
+    <Content Include="docs\_build\html\intro.html" />
+    <Content Include="docs\_build\html\py-modindex.html" />
+    <Content Include="docs\_build\html\reference.html" />
+    <Content Include="docs\_build\html\search.html" />
+    <Content Include="docs\_build\html\searchindex.js" />
+    <Content Include="docs\_build\html\status.html" />
+    <Content Include="docs\_build\html\tutorial.html" />
+    <Content Include="docs\_build\html\_sources\index.txt" />
+    <Content Include="docs\_build\html\_sources\intro.txt" />
+    <Content Include="docs\_build\html\_sources\reference.txt" />
+    <Content Include="docs\_build\html\_sources\status.txt" />
+    <Content Include="docs\_build\html\_sources\tutorial.txt" />
+    <Content Include="docs\_build\html\_static\ajax-loader.gif" />
+    <Content Include="docs\_build\html\_static\basic.css" />
+    <Content Include="docs\_build\html\_static\comment-bright.png" />
+    <Content Include="docs\_build\html\_static\comment-close.png" />
+    <Content Include="docs\_build\html\_static\comment.png" />
+    <Content Include="docs\_build\html\_static\darkmetal.png" />
+    <Content Include="docs\_build\html\_static\default.css" />
+    <Content Include="docs\_build\html\_static\doctools.js" />
+    <Content Include="docs\_build\html\_static\down-pressed.png" />
+    <Content Include="docs\_build\html\_static\down.png" />
+    <Content Include="docs\_build\html\_static\file.png" />
+    <Content Include="docs\_build\html\_static\headerbg.png" />
+    <Content Include="docs\_build\html\_static\jquery.js" />
+    <Content Include="docs\_build\html\_static\logo.png" />
+    <Content Include="docs\_build\html\_static\metal.png" />
+    <Content Include="docs\_build\html\_static\minus.png" />
+    <Content Include="docs\_build\html\_static\navigation.png" />
+    <Content Include="docs\_build\html\_static\plus.png" />
+    <Content Include="docs\_build\html\_static\print.css" />
+    <Content Include="docs\_build\html\_static\pygments.css" />
+    <Content Include="docs\_build\html\_static\scrolls.css" />
+    <Content Include="docs\_build\html\_static\searchtools.js" />
+    <Content Include="docs\_build\html\_static\sidebar.js" />
+    <Content Include="docs\_build\html\_static\theme_extras.js" />
+    <Content Include="docs\_build\html\_static\underscore.js" />
+    <Content Include="docs\_build\html\_static\up-pressed.png" />
+    <Content Include="docs\_build\html\_static\up.png" />
+    <Content Include="docs\_build\html\_static\watermark.png" />
+    <Content Include="docs\_build\html\_static\watermark_blur.png" />
+    <Content Include="docs\_build\html\_static\websupport.js" />
+    <Content Include="requirements.txt" />
+    <Content Include="svgs\0.svg" />
+    <Content Include="svgs\1.svg" />
+    <Content Include="svgs\2.svg" />
+    <Content Include="svgs\3.svg" />
+    <Content Include="svgs\abcd.svg" />
+    <Content Include="svgs\atiger.svg" />
+    <Content Include="svgs\butterfly.svg" />
+    <Content Include="svgs\circle.svg" />
+    <Content Include="svgs\cloud.svg" />
+    <Content Include="svgs\curvy-marker.svg" />
+    <Content Include="svgs\ellipse-combined.svg" />
+    <Content Include="svgs\ellipse-overlapped.svg" />
+    <Content Include="svgs\ellipse.svg" />
+    <Content Include="svgs\fillrule-evenodd.svg" />
+    <Content Include="svgs\Giza_pyramid_complex.svg" />
+    <Content Include="svgs\gradient.svg" />
+    <Content Include="svgs\inkscape-gradient.svg" />
+    <Content Include="svgs\intaglio-gradient.svg" />
+    <Content Include="svgs\intaglio.svg" />
+    <Content Include="svgs\line-caps.svg" />
+    <Content Include="svgs\line-joins.svg" />
+    <Content Include="svgs\line.svg" />
+    <Content Include="svgs\pattern.svg" />
+    <Content Include="svgs\polygon-star-fillrule.svg" />
+    <Content Include="svgs\polygon-star.svg" />
+    <Content Include="svgs\polygon.svg" />
+    <Content Include="svgs\polyline-2.svg" />
+    <Content Include="svgs\polyline.svg" />
+    <Content Include="svgs\primitives.svg" />
+    <Content Include="svgs\quadratic-curves.svg" />
+    <Content Include="svgs\quadratic-tower.svg" />
+    <Content Include="svgs\radial-gradient.svg" />
+    <Content Include="svgs\rect-named-colors.svg" />
+    <Content Include="svgs\rect-opacity.svg" />
+    <Content Include="svgs\rect.svg" />
+    <Content Include="svgs\rectangles.svg" />
+    <Content Include="svgs\rounded-rectangle.svg" />
+    <Content Include="svgs\sharp_line_join.svg" />
+    <Content Include="svgs\ship.svg" />
+    <Content Include="svgs\sky.svg" />
+    <Content Include="svgs\sky2.svg" />
+    <Content Include="svgs\Smiley.svg" />
+    <Content Include="svgs\snowdonkey.svg" />
+    <Content Include="svgs\spiral.svg" />
+    <Content Include="svgs\sun.svg" />
+    <Content Include="svgs\uneven_square.svg" />
+    <Content Include="svgs\zapf.svgz" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="docs\conf.py" />
+    <Compile Include="examples\test_pygame.py" />
+    <Compile Include="examples\test_pyglet.py" />
+    <Compile Include="glsvg\glutils.py" />
+    <Compile Include="glsvg\gradient.py" />
+    <Compile Include="glsvg\graphics.py" />
+    <Compile Include="glsvg\lines.py" />
+    <Compile Include="glsvg\render_target.py" />
+    <Compile Include="glsvg\shader.py" />
+    <Compile Include="glsvg\svg.py" />
+    <Compile Include="glsvg\svg_constants.py" />
+    <Compile Include="glsvg\svg_filter.py" />
+    <Compile Include="glsvg\svg_parser_utils.py" />
+    <Compile Include="glsvg\svg_path.py" />
+    <Compile Include="glsvg\svg_path_builder.py" />
+    <Compile Include="glsvg\svg_pattern.py" />
+    <Compile Include="glsvg\svg_shader_constants.py" />
+    <Compile Include="glsvg\svg_style.py" />
+    <Compile Include="glsvg\vector_math.py" />
+    <Compile Include="glsvg\__init__.py" />
+    <Compile Include="setup.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="docs" />
+    <Folder Include="docs\_build\" />
+    <Folder Include="docs\_build\html" />
+    <Folder Include="docs\_build\html\_sources" />
+    <Folder Include="docs\_build\html\_static" />
+    <Folder Include="examples" />
+    <Folder Include="glsvg" />
+    <Folder Include="svgs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="env\">
+      <Id>{748f9688-95f5-4dd7-8107-4fae01314e63}</Id>
+      <Description>env (Python 2.7)</Description>
+      <BaseInterpreter>{2af0f10d-7135-4994-9156-5d01c9c11b7e}</BaseInterpreter>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <LibraryPath>Lib\</LibraryPath>
+      <Version>2.7</Version>
+      <Architecture>x86</Architecture>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+    </Interpreter>
+  </ItemGroup>
+  <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
+</Project>
