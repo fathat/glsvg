@@ -12,6 +12,7 @@ void main()
 
 
 radial = """
+#line 15
 
 uniform vec2 center;
 uniform vec2 focalPoint;
@@ -38,14 +39,23 @@ void main()
 {
     vec4 result;
     
-    
-
     vec3 tFocalPoint = invGradientTransform*vec3(focalPoint.x, focalPoint.y, 1.0);
     vec3 transformed = invGradientTransform*vec3(localCoords.x, localCoords.y, 1.0);
+
+    float c = length(center - focalPoint);
+    float alpha = atan((center.x-focalPoint.x),(center.y-focalPoint.y));
         
+    float a = radius;
+    float r = length(transformed.xy - focalPoint.xy);
+    float theta = atan((transformed.x-focalPoint.x),(transformed.y-focalPoint.y));
+    float cosAlphaTheta = cos(alpha-theta);
+    float circR2 = sqrt(a*a + c*c*cosAlphaTheta*cosAlphaTheta - c*c) + c*cosAlphaTheta;
+
+    float ratio = clamp(r/circR2, 0.0, 1.0);
+            
     //calculate the intensity
-    float intensity = clamp(distance(transformed.xy, focalPoint.xy) / radius, 0.0, 1.0 );
-    //float intensity = clamp(distance(transformed.xy, realcenter.xy) / radius, 0.0, 1.0 );
+    float intensity = ratio;
+
     if(intensity <= stops.x)
     {
         result.rgba = mix(stop0, stop1, (intensity / stops.x));
@@ -73,6 +83,7 @@ void main()
 }"""
 
 linear = """
+#line 86
 
 uniform vec2 start;
 uniform vec2 end;

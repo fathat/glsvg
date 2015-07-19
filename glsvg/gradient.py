@@ -184,6 +184,9 @@ class LinearGradient(Gradient):
         gradient_shaders.linear_shader.uniform_matrixf("gradientTransform",
                                      False,
                                      svg_matrix_to_gl_matrix(self.grad_transform))
+        gradient_shaders.linear_shader.uniform_matrixf("invGradientTransform",
+                                     False,
+                                     svg_matrix_to_gl_matrix(self.inv_transform))
         stop_points = []
         for stop in self.stops:
             stop_point, color = stop

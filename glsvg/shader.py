@@ -32,10 +32,10 @@ class Shader(object):
             print "%s compiled successfuly." % (self.name)
         else:
             print "Compile failed on shader %s: " % (self.name)
-            self.print_info_log()
+            print gl.glGetShaderInfoLog(self.shader_object)
 
     def info_log(self):
-        gl.glGetProgramInfoLog(self.shader_object)
+        return gl.glGetProgramInfoLog(self.shader_object)
 
     def print_info_log(self):
         print self.info_log()
