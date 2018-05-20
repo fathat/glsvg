@@ -41,6 +41,9 @@ local.properties
 *.user
 *.sln.docstates
 
+# visual studio code
+.vs/
+
 # Build results
 [Dd]ebug/
 [Rr]elease/

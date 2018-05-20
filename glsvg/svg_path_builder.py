@@ -4,11 +4,11 @@ import string
 
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
-from svg_constants import *
-from svg_parser_utils import *
-from vector_math import Matrix
-import svg_style
-import svg_constants
+from .svg_constants import *
+from .svg_parser_utils import *
+from .vector_math import Matrix
+from glsvg import svg_style
+from glsvg import svg_constants
 
 POINT_RE = re.compile("(-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 PATH_CMD_RE = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
@@ -112,7 +112,7 @@ class SVGPathBuilder(object):
             cy = float(e.get('cy', 0))
             r = float(e.get('r'))
             path.cx, path.cy, path.r = cx, cy, r
-            for i in xrange(config.circle_points):
+            for i in range(config.circle_points):
                 theta = 2 * i * math.pi / config.circle_points
                 self.line_to(cx + r * math.cos(theta), cy + r * math.sin(theta))
             self.close_path()
@@ -124,7 +124,7 @@ class SVGPathBuilder(object):
             rx = float(e.get('rx'))
             ry = float(e.get('ry'))
             path.cx, path.cy, path.rx, path.ry = cx, cy, rx, ry
-            for i in xrange(config.circle_points):
+            for i in range(config.circle_points):
                 theta = 2 * i * math.pi / config.circle_points
                 self.line_to(cx + rx * math.cos(theta), cy + ry * math.sin(theta))
             self.close_path()
@@ -150,7 +150,7 @@ class SVGPathBuilder(object):
         opcode = ''
         while path_data:
             prev_opcode = opcode
-            if path_data[0] in string.letters:
+            if path_data[0] in string.ascii_letters:
                 opcode = path_data.pop(0)
             else:
                 opcode = prev_opcode
@@ -283,7 +283,7 @@ class SVGPathBuilder(object):
             delta -= math.pi * 2
         n_points = max(int(abs(self.n_circle_points * delta / (2 * math.pi))), 1)
 
-        for i in xrange(n_points + 1):
+        for i in range(n_points + 1):
             theta = psi + i * delta / n_points
             ct = math.cos(theta)
             st = math.sin(theta)
@@ -293,7 +293,7 @@ class SVGPathBuilder(object):
     def quadratic_curve_to(self, x1, y1, x2, y2):
         x0, y0 = self.cursor_x, self.cursor_y
         n_bezier_points = self.n_bezier_points
-        for i in xrange(n_bezier_points + 1):
+        for i in range(n_bezier_points + 1):
             t = float(i) / n_bezier_points
             q0x = (x1 - x0) * t + x0
             q0y = (y1 - y0) * t + y0
@@ -312,7 +312,7 @@ class SVGPathBuilder(object):
     def curve_to(self, x1, y1, x2, y2, x, y):
         n_bezier_points = self.n_bezier_points
         if not self._bezier_coefficients:
-            for i in xrange(n_bezier_points + 1):
+            for i in range(n_bezier_points + 1):
                 t = float(i) / n_bezier_points
                 t0 = (1 - t) ** 3
                 t1 = 3 * t * (1 - t) ** 2
@@ -437,7 +437,7 @@ class SVGPathBuilder(object):
         return t_list
 
     def _warn(self, message):
-        print "Warning: SVG Parser - %s" % (message,)
+        print("Warning: SVG Parser - %s" % (message,))
 
 
 

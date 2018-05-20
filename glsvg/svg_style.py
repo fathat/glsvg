@@ -1,5 +1,6 @@
-from svg_constants import DEFAULT_FILL, DEFAULT_STROKE
-from svg_parser_utils import *
+from .svg_constants import DEFAULT_FILL, DEFAULT_STROKE
+from .svg_parser_utils import *
+
 
 class SVGStyle(object):
 

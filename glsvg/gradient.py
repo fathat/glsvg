@@ -1,7 +1,7 @@
-from svg_parser_utils import *
-from vector_math import *
-import shader
-import svg_shader_constants
+from .svg_parser_utils import *
+from .vector_math import *
+from glsvg import shader
+from glsvg import svg_shader_constants
 import math
 
 
@@ -202,7 +202,7 @@ class LinearGradient(Gradient):
         def get_stop(i):
             return self.stops[i] if i < len(self.stops) else self.stops[-1]
         
-        for i in xrange(5):
+        for i in range(5):
             stop_point, color = get_stop(i)
             color = tuple(float(x)/255.0 for x in color)
             gradient_shaders.linear_shader.uniformf("stop" + str(i), *color)
@@ -305,7 +305,7 @@ class RadialGradient(Gradient):
         def get_stop(i):
             return self.stops[i] if i < len(self.stops) else (1.0, [0.0, 0.0, 0.0, 0.0])
         
-        for i in xrange(len(stop_points)):
+        for i in range(len(stop_points)):
             stop_point, color = get_stop(i)
             color = tuple(float(x)/255.0 for x in color)
             gradient_shaders.radial_shader.uniformf("stop" + str(i), *color)

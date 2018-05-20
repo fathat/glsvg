@@ -1,5 +1,5 @@
 import re
-import svg_constants
+from glsvg import svg_constants
 
 re_list_parser = re.compile("([A-Za-z]|-?[0-9]+\.?[0-9]*(?:e-?[0-9]*)?)")
 
@@ -87,7 +87,7 @@ def parse_color(c, default=None):
         else:
             raise Exception("Incorrect length for color " + str(c) + " length " + str(len(c)))
         return [r,g,b,a]
-    except Exception, ex:
-        print 'Exception parsing color', ex
+    except Exception as ex:
+        print('Exception parsing color ' + str(ex))
         return None
         

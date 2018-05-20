@@ -14,31 +14,31 @@ class Shader(object):
         if src:
             self.source(src)
             self.compile()
-    
+
     def __del__(self):
         if self.program:
             self.program.detach(self)
             self.program = None
         gl.glDeleteShader(self.shader_object)
-    
+
     def source(self, source_string):
         gl.glShaderSource(self.shader_object, source_string)
-    
+
     def compile(self):
         gl.glCompileShader(self.shader_object)
         return_val = gl.glGetShaderiv(self.shader_object, gl.GL_COMPILE_STATUS)
 
         if return_val:
-            print "%s compiled successfuly." % (self.name)
+            print("%s compiled successfuly." % (self.name))
         else:
-            print "Compile failed on shader %s: " % (self.name)
-            print gl.glGetShaderInfoLog(self.shader_object)
+            print("Compile failed on shader %s: " % (self.name))
+            print(gl.glGetShaderInfoLog(self.shader_object))
 
     def info_log(self):
         return gl.glGetProgramInfoLog(self.shader_object)
 
     def print_info_log(self):
-        print self.info_log()
+        print(self.info_log())
 
 
 class UniformVar(object):
@@ -46,7 +46,7 @@ class UniformVar(object):
         self.set_function = set_function
         self.name = name
         self.values = args
-    
+
     def set(self):
         self.set_function( self.name, *self.values )
 
@@ -64,23 +64,25 @@ class Program(object):
             self.link()
             self.use()
             self.stop()
-    
+
     def __del__(self):
-        gl.glDeleteProgram(self.program_object)
-    
+        try:
+            gl.glDeleteProgram(self.program_object)
+        except Exception as e:
+            print(e)
+
     def attach(self, shader):
         self.shaders.append(shader)
         shader.program = self
         gl.glAttachShader(self.program_object, shader.shader_object)
-    
+
     def detach(self, shader):
         self.shaders.remove(shader)
         gl.glDetachShader(self.program_object, shader.shader_object)
-        print "Shader detached"
-    
+
     def link(self):
         gl.glLinkProgram(self.program_object)
-    
+
     def use(self):
         global active_shader
         active_shader = self
@@ -92,7 +94,7 @@ class Program(object):
         gl.glUseProgram( 0 )
         active_shader = None
 
-    def uniformi( self, name, *args ):
+    def uniformi(self, name, *args ):
         argf = {1: gl.glUniform1i,
                 2: gl.glUniform2i,
                 3: gl.glUniform3i,
@@ -106,7 +108,7 @@ class Program(object):
         self.uniform_vars[name] = UniformVar(_set_uniform, name, *args)
         if self == active_shader:
             self.uniform_vars[name].set()
-    
+
     def uniformf(self, name, *args):
         argf = {1: gl.glUniform1f,
                 2: gl.glUniform2f,
@@ -121,7 +123,7 @@ class Program(object):
         self.uniform_vars[name] = UniformVar(_set_uniform, name, *args)
         if self == active_shader:
             self.uniform_vars[name].set()
-    
+
     def uniform_matrixf(self, name, transpose, values):
         argf = {4: gl.glUniformMatrix2fv,
                 9: gl.glUniformMatrix3fv,
@@ -135,13 +137,13 @@ class Program(object):
         self.uniform_vars[name] = UniformVar(_set_uniform, name, values)
         if self == active_shader:
             self.uniform_vars[name].set()
-    
+
     def set_vars(self):
-        for name, var in self.uniform_vars.iteritems():
+        for name, var in self.uniform_vars.items():
             var.set()
-    
+
     def print_info_log(self):
-        print gl.glGetInfoLog(self.program_object)
+        print(gl.glGetInfoLog(self.program_object))
 
 
 def make_ps_from_src(name, src):

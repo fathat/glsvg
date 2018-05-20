@@ -1,12 +1,12 @@
 import OpenGL.GL as gl
 
-from glutils import ViewportAs
+from .glutils import ViewportAs
 
-import render_target
+from glsvg import render_target
 
-from svg_parser_utils import *
-from svg_constants import *
-from svg_path import SVGRenderableElement
+from .svg_parser_utils import *
+from .svg_constants import *
+from .svg_path import SVGRenderableElement
 
 
 class SVGPattern(SVGRenderableElement):
@@ -47,9 +47,6 @@ class SVGPattern(SVGRenderableElement):
     def render(self):
         #setup projection matrix..
         min_x, min_y, max_x, max_y = self.extents()
-
-        print "extents"
-        print self.extents()
 
         with self.render_texture:
             with ViewportAs(min_x * self.x, min_y * self.y, max_x * self.width, max_y * self.height, PATTERN_TEX_SIZE,

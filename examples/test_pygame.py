@@ -28,7 +28,7 @@ class App:
             next = self.filelist.index(prevFile)+dir
             next %= len(self.filelist)
         self.filename = os.path.join('../svgs', self.filelist[next])
-        print 'Parsing', self.filename
+        print('Parsing', self.filename)
         self.svg = glsvg.SVGDoc(self.filename)
         self.svg.anchor_x, self.svg.anchor_y = self.svg.width/2, self.svg.height/2
 
@@ -69,6 +69,7 @@ class App:
         self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
 
     def on_cleanup(self):
+        del self.svg
         pygame.quit()
 
     def on_execute(self):

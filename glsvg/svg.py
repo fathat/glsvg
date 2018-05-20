@@ -20,19 +20,21 @@ import re
 import math
 import string
 import traceback
+import gzip
 
-from svg_constants import *
+from .svg_constants import *
 
-from glutils import *
-from vector_math import *
-from svg_parser_utils import parse_color, parse_float, parse_style, parse_list
-from gradient import *
+from .glutils import *
+from .vector_math import *
+from .svg_parser_utils import parse_color, parse_float, parse_style, parse_list
+from .gradient import *
 
-from svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse, SVGMarker, SVGContainer
-from svg_pattern import *
-import graphics
+from .svg_path import SVGPath, SVGGroup, SVGDefs, SVGUse, SVGMarker, SVGContainer
+from .svg_pattern import *
+from glsvg import graphics
 
-from render_target import CanvasManager
+from .render_target import CanvasManager
+
 
 class SVGConfig:
     """Configuration for how to render SVG objects, such as
@@ -108,6 +110,16 @@ class SVGDoc(SVGContainer):
             self.config = config
         self._stencil_mask = 0
 
+        # drawing information
+        self.x = 0
+        self.y = 0
+        self.height = 0
+        self.width = 0
+
+        self.preserve_aspect_ratio = 'none'
+
+        self.opacity = 1.0
+
         #: Number of triangles in document
         self.n_tris = 0
 
@@ -134,12 +146,17 @@ class SVGDoc(SVGContainer):
         self._gradients = GradientContainer()
 
         if self.filename:
-            if open(self.filename, 'rb').read(3) == '\x1f\x8b\x08':  # gzip magic numbers
-                import gzip
-                f = gzip.open(self.filename, 'rb')
+            is_svg = False
+
+            with open(self.filename, 'rb') as f:
+                is_svg = (f.read(3) == b'\x1f\x8b\x08')
+
+            if is_svg:  # gzip magic numbers
+                with gzip.open(self.filename, 'rb') as f:
+                    self.root = parse(f)._root
             else:
-                f = open(self.filename, 'rb')
-            self.root = parse(f)._root
+                with open(self.filename, 'rb') as f:
+                    self.root = parse(f)._root
         else:
             self.root = filename_or_element
 
@@ -176,10 +193,11 @@ class SVGDoc(SVGContainer):
             try:
                 self._parse_element(e)
             except Exception as ex:
-                print 'Exception while parsing element', e
+                print('Exception while parsing element ' + str(e))
                 raise
 
-    def _is_path_tag(self, e):
+    @staticmethod
+    def _is_path_tag(e):
         return (e.tag.endswith('path')
                 or e.tag.endswith('rect')
                 or e.tag.endswith('polyline') or e.tag.endswith('polygon')
@@ -226,10 +244,9 @@ class SVGDoc(SVGContainer):
         for c in e.getchildren():
             try:
                 self._parse_element(c, renderable)
-            except Exception, ex:
-                print 'Exception while parsing element', c
+            except Exception as ex:
+                print('Exception while parsing element ', c)
                 raise
-
 
     def get_path_ids(self):
         """Returns all the path ids"""
@@ -240,7 +257,6 @@ class SVGDoc(SVGContainer):
         return self.path_lookup[id]
 
     def _register_pattern_part(self, pattern_id, pattern_svg_path):
-        print "registering pattern"
         self.patterns[pattern_id].paths.append(pattern_svg_path)
 
     def _set_anchor_x(self, anchor_x):
@@ -353,4 +369,4 @@ class SVGDoc(SVGContainer):
                 svg_path.render()
 
     def _warn(self, message):
-        print "Warning: SVG Parser (%s) - %s" % (self.filename, message)
+        print("Warning: SVG Parser (%s) - %s" % (self.filename, message))

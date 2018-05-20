@@ -1,16 +1,15 @@
 __author__ = 'Ian'
 import OpenGL.GL as gl
-import graphics
+from glsvg import graphics
 
 
 class Texture2D:
 
     def __init__(self, w, h, wrap=True):
-
         self.width = w
         self.height = h
         self.id = gl.glGenTextures(1)
-        print "texture id", self.id
+        print("texture id", self.id)
 
         self.bind()
         gl.glTexEnvf(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
@@ -22,18 +21,19 @@ class Texture2D:
         gl.glTexParameterf(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, wrap_mode)
         gl.glTexParameterf(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, wrap_mode)
 
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA8, self.width, self.height, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA8, self.width, self.height, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE,
+                        None)
 
-        print "Tex OK? ", gl.glGetError() == gl.GL_NO_ERROR
+        assert gl.glGetError() == gl.GL_NO_ERROR
         self.unbind()
 
     def resize(self, w, h):
         self.width = w
         self.height = h
         self.bind()
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA8, self.width, self.height, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA8, self.width, self.height, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE,
+                        None)
         self.unbind()
-
 
     def bind(self):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.id)
@@ -68,7 +68,6 @@ class RenderBufferObject:
 
 
 class RenderTarget:
-
     id_stack = []
 
     def __init__(self, w, h, depth_and_stencil=False):
@@ -93,16 +92,15 @@ class RenderTarget:
     def check_status(self):
         status = gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER)
         if status == gl.GL_FRAMEBUFFER_COMPLETE:
-            print "Framebuffer complete"
             return True
         else:
-            print "Render target error: " + str(status)
+            print("Render target error: " + str(status))
             return False
 
     def blit(self):
-        w,h = self.texture.width, self.texture.height
+        w, h = self.texture.width, self.texture.height
         with self.texture:
-            graphics.draw_quad(0.5, 0.5, w+0.5, h+0.5)
+            graphics.draw_quad(0.5, 0.5, w + 0.5, h + 0.5)
 
     def resize(self, w, h):
         self.texture.resize(w, h)
@@ -138,14 +136,12 @@ class CanvasManager:
     instance = None
 
     def __init__(self):
-        print "Initializing canvas manager"
         self.canvas = {}
         vp = list(gl.glGetFloatv(gl.GL_VIEWPORT))
         self.w = int(vp[2])
         self.h = int(vp[3])
 
     def resize(self, w, h):
-        print "resizing", w, h
         self.w = w
         self.h = h
 
@@ -153,7 +149,7 @@ class CanvasManager:
             c.resize(w, h)
 
     def get(self, name):
-        if not name in self.canvas:
+        if name not in self.canvas:
             self.canvas[name] = RenderTarget(self.w, self.h)
         return self.canvas[name]
 

@@ -1,13 +1,13 @@
 #! usr/bin/env python
 import sys
 import os
-sys.path.append(os.path.abspath('../'))
-
-
 import pyglet
 from pyglet.gl import *
+
+sys.path.append(os.path.abspath('../'))
 import glsvg
 import glsvg.graphics
+
 
 class SVGWindow(pyglet.window.Window):
 
@@ -29,13 +29,19 @@ class SVGWindow(pyglet.window.Window):
         self.filelist = [f for f in os.listdir('../svgs')
                     if f.endswith('svg') or f.endswith('svgz')]
 
-        glClearColor(1,1,1,1)
+        glClearColor(1.0, 1.0, 1.0, 1.0)
         glEnable(GL_LINE_SMOOTH)
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
 
         self.show_wireframe = False
         self.keys = pyglet.window.key.KeyStateHandler()
         self.push_handlers(self.keys)
+
+        self.zoom = 1
+        self.angle = 0
+        self.draw_x = 400
+        self.draw_y = 300
+
         self.switch_file(0)
         pyglet.clock.schedule_interval(self.tick, 1/60.0)
 
@@ -66,7 +72,7 @@ class SVGWindow(pyglet.window.Window):
             next = self.filelist.index(prevFile)+dir
             next %= len(self.filelist)
         self.filename = os.path.join('../svgs', self.filelist[next])
-        print 'Parsing', self.filename
+        print('Parsing ' + self.filename)
         self.svg = glsvg.SVGDoc(self.filename)
         self.svg.anchor_x, self.svg.anchor_y = 'center', 'center'
         self.statslabel.text = "total tris: " + str(glsvg.graphics.triangles_drawn) + ", fill-tris: " + str(self.svg.n_tris) + ", lines: " + str(self.svg.n_lines)
@@ -117,7 +123,6 @@ class SVGWindow(pyglet.window.Window):
         glTranslatef(-self.offset_x, -self.offset_y, 0)
         self.svg.draw(self.draw_x, self.draw_y, scale=self.zoom, angle=self.angle)
 
-        #self.svg.render()
         #draw patterns
         i = 0
         for pattern in self.svg.patterns.values():
